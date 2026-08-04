@@ -5,7 +5,7 @@ const API_BASE_URL =
   (typeof window !== "undefined" && window.API_BASE_URL) ||
   "http://localhost:3000";
 
-export async function loadOrders(status) {
+async function loadOrders(status) {
   const url = new URL(`${API_BASE_URL}/orders`);
   url.searchParams.set("active", "true");
   if (status) {
@@ -25,7 +25,7 @@ export async function loadOrders(status) {
   }
   for (const order of orders) {
     const item = document.createElement("li");
-    item.textContent = `Commande #${order.id} — ${order.totalXpf} XPF (${order.status})`;
+    item.textContent = `Commande #${order.id} — ${order.total} XPF (${order.status})`;
     list.appendChild(item);
   }
 }
@@ -36,4 +36,10 @@ if (typeof document !== "undefined") {
     select.addEventListener("change", () => loadOrders(select.value));
     loadOrders();
   });
+}
+
+// Chargé à la fois comme module natif par index.html (<script type="module">, pas de "module" global)
+// et via require() par les tests Jest (CommonJS) — d'où l'export gardé plutôt qu'un mot-clé "export".
+if (typeof module !== "undefined") {
+  module.exports = { loadOrders };
 }
