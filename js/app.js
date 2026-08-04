@@ -25,7 +25,7 @@ async function loadOrders(status) {
   }
   for (const order of orders) {
     const item = document.createElement("li");
-    item.textContent = `Commande #${order.id} — ${order.totalXpf} XPF (${order.status})`;
+    item.textContent = `Commande #${order.id} — ${order.total} XPF (${order.status})`;
     list.appendChild(item);
   }
 }

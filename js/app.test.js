@@ -1,8 +1,10 @@
 /**
- * Tests d'acceptation — CLA-121
+ * Tests d'acceptation — CLA-121, CLA-95, CLA-195
  * État vide : afficher "Aucune commande" quand la liste est vide
  */
 
+const fs = require("fs");
+const path = require("path");
 const { loadOrders } = require("./app.js");
 
 describe("loadOrders", () => {
@@ -29,8 +31,8 @@ describe("loadOrders", () => {
 
   test("liste non vide → une ligne par commande, pas de message vide", async () => {
     const orders = [
-      { id: 1, totalXpf: 25, status: "pending" },
-      { id: 2, totalXpf: 50, status: "ready" },
+      { id: 1, total: 25, status: "pending" },
+      { id: 2, total: 50, status: "ready" },
     ];
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(orders),
@@ -45,9 +47,9 @@ describe("loadOrders", () => {
     expect(list.textContent).not.toContain("Aucune commande");
   });
 
-  test("affiche order.totalXpf directement sans diviser par 100", async () => {
-    // Le back expose maintenant totalXpf (entier XPF déjà calculé) — CLA-126
-    const orders = [{ id: 42, totalXpf: 1500, status: "pending" }];
+  test("affiche order.total directement sans transformation", async () => {
+    // Le back stocke et expose total déjà en XPF, sans champ totalXpf dérivé — CLA-195
+    const orders = [{ id: 42, total: 1500, status: "pending" }];
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(orders),
     });
@@ -58,7 +60,7 @@ describe("loadOrders", () => {
     expect(list.children[0].textContent).toBe("Commande #42 — 1500 XPF (pending)");
   });
 
-  test("appel réseau cible /orders?active=true", async () => {
+  test("appel réseau par défaut cible /orders?active=true sans status", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue([]),
     });
@@ -68,19 +70,29 @@ describe("loadOrders", () => {
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("/orders?active=true")
     );
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.has("status")).toBe(false);
   });
 
-  test("order.totalXpf absent du back → affiche 'undefined XPF' (bug CLA-233)", async () => {
-    // CLA-195 a retiré totalXpf du back ; le back n'envoie plus que total
-    const orders = [{ id: 42, total: 1500, status: "pending" }];
+  test("appel réseau avec status envoie active=true ET status — CLA-95", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue(orders),
+      json: jest.fn().mockResolvedValue([]),
     });
 
-    await loadOrders();
+    await loadOrders("paid");
 
-    const list = document.getElementById("orders-list");
-    // CE TEST ÉCHOUE sur ce commit : app.js lit encore order.totalXpf → affiche "undefined XPF"
-    expect(list.children[0].textContent).toBe("Commande #42 — 1500 XPF (pending)");
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("active")).toBe("true");
+    expect(url.searchParams.get("status")).toBe("paid");
+  });
+
+  test("index.html : le sélecteur de statut respecte le contrat back (paid/cancelled, pas pending/in_progress/delivered) — CLA-95", () => {
+    const html = fs.readFileSync(path.resolve(__dirname, "../index.html"), "utf8");
+    expect(html).toContain('id="status-filter"');
+    expect(html).toContain('value="paid"');
+    expect(html).toContain('value="cancelled"');
+    expect(html).not.toContain('value="pending"');
+    expect(html).not.toContain('value="in_progress"');
+    expect(html).not.toContain('value="delivered"');
   });
 });
