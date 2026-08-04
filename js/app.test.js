@@ -29,8 +29,8 @@ describe("loadActiveOrders", () => {
 
   test("liste non vide → une ligne par commande, pas de message vide", async () => {
     const orders = [
-      { id: 1, total: 2500, status: "pending" },
-      { id: 2, total: 5000, status: "ready" },
+      { id: 1, totalXpf: 25, status: "pending" },
+      { id: 2, totalXpf: 50, status: "ready" },
     ];
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(orders),
@@ -43,6 +43,19 @@ describe("loadActiveOrders", () => {
     expect(list.children[0].textContent).toBe("Commande #1 — 25 XPF (pending)");
     expect(list.children[1].textContent).toBe("Commande #2 — 50 XPF (ready)");
     expect(list.textContent).not.toContain("Aucune commande");
+  });
+
+  test("affiche order.totalXpf directement sans diviser par 100", async () => {
+    // Le back expose maintenant totalXpf (entier XPF déjà calculé) — CLA-126
+    const orders = [{ id: 42, totalXpf: 1500, status: "pending" }];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(orders),
+    });
+
+    await loadActiveOrders();
+
+    const list = document.getElementById("orders-list");
+    expect(list.children[0].textContent).toBe("Commande #42 — 1500 XPF (pending)");
   });
 
   test("appel réseau cible /orders?active=true", async () => {
