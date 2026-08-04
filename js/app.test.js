@@ -1,5 +1,5 @@
 /**
- * Tests d'acceptation — CLA-121, CLA-95, CLA-195
+ * Tests d'acceptation — CLA-121, CLA-95, CLA-195, CLA-227
  * État vide : afficher "Aucune commande" quand la liste est vide
  */
 
@@ -94,5 +94,127 @@ describe("loadOrders", () => {
     expect(html).not.toContain('value="pending"');
     expect(html).not.toContain('value="in_progress"');
     expect(html).not.toContain('value="delivered"');
+  });
+});
+
+describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<ul id="orders-list"></ul>';
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test("affiche createdAt formatté quand présent dans la commande", async () => {
+    const orders = [{ id: 1, total: 100, status: "paid", createdAt: "2024-01-10T08:00:00Z" }];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(orders),
+    });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    const text = list.children[0].textContent;
+    expect(text).toContain("Commande #1");
+    expect(text).toContain("100 XPF");
+    expect(text).toContain("2024");
+  });
+
+  test("n'affiche pas de date si createdAt absent — rétrocompatibilité", async () => {
+    const orders = [{ id: 1, total: 100, status: "paid" }];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(orders),
+    });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    expect(list.children[0].textContent).toBe("Commande #1 — 100 XPF (paid)");
+  });
+
+  test("sort=date_asc ajoute ?sort=date_asc à la requête", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders(undefined, "date_asc");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("sort")).toBe("date_asc");
+    expect(url.searchParams.get("active")).toBe("true");
+  });
+
+  test("sort=date_desc ajoute ?sort=date_desc à la requête", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders(undefined, "date_desc");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("sort")).toBe("date_desc");
+  });
+
+  test("from et to ajoutent les paramètres de plage de dates", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders(undefined, undefined, "2024-02-01", "2024-03-31");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("from")).toBe("2024-02-01");
+    expect(url.searchParams.get("to")).toBe("2024-03-31");
+  });
+
+  test("tous les paramètres se combinent (status + sort + from + to)", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders("paid", "date_desc", "2024-02-01", "2024-03-31");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("active")).toBe("true");
+    expect(url.searchParams.get("status")).toBe("paid");
+    expect(url.searchParams.get("sort")).toBe("date_desc");
+    expect(url.searchParams.get("from")).toBe("2024-02-01");
+    expect(url.searchParams.get("to")).toBe("2024-03-31");
+  });
+
+  test("from seul sans to → seul from dans la requête", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders(undefined, undefined, "2024-02-01", undefined);
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("from")).toBe("2024-02-01");
+    expect(url.searchParams.has("to")).toBe(false);
+  });
+
+  test("sans sort → pas de param sort dans la requête", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders();
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.has("sort")).toBe(false);
+  });
+
+  test("sans from ni to → pas de paramètres de plage dans la requête", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders();
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.has("from")).toBe(false);
+    expect(url.searchParams.has("to")).toBe(false);
   });
 });

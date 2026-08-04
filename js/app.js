@@ -5,12 +5,22 @@ const API_BASE_URL =
   (typeof window !== "undefined" && window.API_BASE_URL) ||
   "http://localhost:3000";
 
-async function loadOrders(status) {
+function formatDate(isoString) {
+  if (!isoString) return null;
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(isoString));
+}
+
+async function loadOrders(status, sort, from, to) {
   const url = new URL(`${API_BASE_URL}/orders`);
   url.searchParams.set("active", "true");
-  if (status) {
-    url.searchParams.set("status", status);
-  }
+  if (status) url.searchParams.set("status", status);
+  if (sort) url.searchParams.set("sort", sort);
+  if (from) url.searchParams.set("from", from);
+  if (to) url.searchParams.set("to", to);
 
   const response = await fetch(url.toString());
   const orders = await response.json();
@@ -25,15 +35,61 @@ async function loadOrders(status) {
   }
   for (const order of orders) {
     const item = document.createElement("li");
-    item.textContent = `Commande #${order.id} — ${order.total} XPF (${order.status})`;
+    const date = formatDate(order.createdAt);
+    const datePart = date ? ` — ${date}` : "";
+    item.textContent = `Commande #${order.id} — ${order.total} XPF (${order.status})${datePart}`;
     list.appendChild(item);
   }
 }
 
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded", () => {
-    const select = document.getElementById("status-filter");
-    select.addEventListener("change", () => loadOrders(select.value));
+    const statusSelect = document.getElementById("status-filter");
+
+    const sortLabel = document.createElement("label");
+    sortLabel.htmlFor = "sort-filter";
+    sortLabel.textContent = "Tri : ";
+
+    const sortSelect = document.createElement("select");
+    sortSelect.id = "sort-filter";
+    for (const [value, text] of [
+      ["", "Date (défaut)"],
+      ["date_asc", "Date croissante"],
+      ["date_desc", "Date décroissante"],
+    ]) {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = text;
+      sortSelect.appendChild(opt);
+    }
+
+    const fromLabel = document.createElement("label");
+    fromLabel.htmlFor = "from-filter";
+    fromLabel.textContent = " Du : ";
+
+    const fromInput = document.createElement("input");
+    fromInput.type = "date";
+    fromInput.id = "from-filter";
+
+    const toLabel = document.createElement("label");
+    toLabel.htmlFor = "to-filter";
+    toLabel.textContent = " Au : ";
+
+    const toInput = document.createElement("input");
+    toInput.type = "date";
+    toInput.id = "to-filter";
+
+    const list = document.getElementById("orders-list");
+    list.before(sortLabel, sortSelect, fromLabel, fromInput, toLabel, toInput);
+
+    const reload = () =>
+      loadOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value);
+
+    statusSelect.addEventListener("change", reload);
+    sortSelect.addEventListener("change", reload);
+    fromInput.addEventListener("change", reload);
+    toInput.addEventListener("change", reload);
+
     loadOrders();
   });
 }
