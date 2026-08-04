@@ -2,12 +2,15 @@
   "name": "shift-pilot-front",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=18.14.0"
+  },
   "scripts": {
     "test": "jest"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0"
+    "jest": "^30.0.0",
+    "jest-environment-jsdom": "^30.0.0"
   },
   "jest": {
     "testEnvironment": "jsdom",
