@@ -1,10 +1,18 @@
 // Front minimal jouet — consomme l'API de shift-pilot-back.
 // Configurable via window.API_BASE_URL (défaut : localhost, à ajuster selon l'environnement).
 
-const API_BASE_URL = window.API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL =
+  (typeof window !== "undefined" && window.API_BASE_URL) ||
+  "http://localhost:3000";
 
-async function loadActiveOrders() {
-  const response = await fetch(`${API_BASE_URL}/orders?active=true`);
+export async function loadOrders(status) {
+  const url = new URL(`${API_BASE_URL}/orders`);
+  url.searchParams.set("active", "true");
+  if (status) {
+    url.searchParams.set("status", status);
+  }
+
+  const response = await fetch(url.toString());
   const orders = await response.json();
 
   const list = document.getElementById("orders-list");
@@ -22,6 +30,10 @@ async function loadActiveOrders() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", loadActiveOrders);
-
-if (typeof module !== "undefined") module.exports = { loadActiveOrders };
+if (typeof document !== "undefined") {
+  document.addEventListener("DOMContentLoaded", () => {
+    const select = document.getElementById("status-filter");
+    select.addEventListener("change", () => loadOrders(select.value));
+    loadOrders();
+  });
+}
