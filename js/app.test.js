@@ -1,11 +1,13 @@
 /**
- * Tests d'acceptation — CLA-121
+ * Tests d'acceptation — CLA-121, CLA-95, CLA-195, CLA-227
  * État vide : afficher "Aucune commande" quand la liste est vide
  */
 
-const { loadActiveOrders } = require("./app.js");
+const fs = require("fs");
+const path = require("path");
+const { loadOrders } = require("./app.js");
 
-describe("loadActiveOrders", () => {
+describe("loadOrders", () => {
   beforeEach(() => {
     document.body.innerHTML = '<ul id="orders-list"></ul>';
   });
@@ -19,7 +21,7 @@ describe("loadActiveOrders", () => {
       json: jest.fn().mockResolvedValue([]),
     });
 
-    await loadActiveOrders();
+    await loadOrders();
 
     const list = document.getElementById("orders-list");
     expect(list.textContent).toBe("Aucune commande");
@@ -29,14 +31,14 @@ describe("loadActiveOrders", () => {
 
   test("liste non vide → une ligne par commande, pas de message vide", async () => {
     const orders = [
-      { id: 1, totalXpf: 25, status: "pending" },
-      { id: 2, totalXpf: 50, status: "ready" },
+      { id: 1, total: 25, status: "pending" },
+      { id: 2, total: 50, status: "ready" },
     ];
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(orders),
     });
 
-    await loadActiveOrders();
+    await loadOrders();
 
     const list = document.getElementById("orders-list");
     expect(list.children.length).toBe(2);
@@ -45,28 +47,174 @@ describe("loadActiveOrders", () => {
     expect(list.textContent).not.toContain("Aucune commande");
   });
 
-  test("affiche order.totalXpf directement sans diviser par 100", async () => {
-    // Le back expose maintenant totalXpf (entier XPF déjà calculé) — CLA-126
-    const orders = [{ id: 42, totalXpf: 1500, status: "pending" }];
+  test("affiche order.total directement sans transformation", async () => {
+    // Le back stocke et expose total déjà en XPF, sans champ totalXpf dérivé — CLA-195
+    const orders = [{ id: 42, total: 1500, status: "pending" }];
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(orders),
     });
 
-    await loadActiveOrders();
+    await loadOrders();
 
     const list = document.getElementById("orders-list");
     expect(list.children[0].textContent).toBe("Commande #42 — 1500 XPF (pending)");
   });
 
-  test("appel réseau cible /orders?active=true", async () => {
+  test("appel réseau par défaut cible /orders?active=true sans status", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue([]),
     });
 
-    await loadActiveOrders();
+    await loadOrders();
 
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("/orders?active=true")
     );
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.has("status")).toBe(false);
+  });
+
+  test("appel réseau avec status envoie active=true ET status — CLA-95", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders("paid");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("active")).toBe("true");
+    expect(url.searchParams.get("status")).toBe("paid");
+  });
+
+  test("index.html : le sélecteur de statut respecte le contrat back (paid/cancelled, pas pending/in_progress/delivered) — CLA-95", () => {
+    const html = fs.readFileSync(path.resolve(__dirname, "../index.html"), "utf8");
+    expect(html).toContain('id="status-filter"');
+    expect(html).toContain('value="paid"');
+    expect(html).toContain('value="cancelled"');
+    expect(html).not.toContain('value="pending"');
+    expect(html).not.toContain('value="in_progress"');
+    expect(html).not.toContain('value="delivered"');
+  });
+});
+
+describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<ul id="orders-list"></ul>';
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test("affiche createdAt formatté quand présent dans la commande", async () => {
+    const orders = [{ id: 1, total: 100, status: "paid", createdAt: "2024-01-10T08:00:00Z" }];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(orders),
+    });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    const text = list.children[0].textContent;
+    expect(text).toContain("Commande #1");
+    expect(text).toContain("100 XPF");
+    expect(text).toContain("2024");
+  });
+
+  test("n'affiche pas de date si createdAt absent — rétrocompatibilité", async () => {
+    const orders = [{ id: 1, total: 100, status: "paid" }];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(orders),
+    });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    expect(list.children[0].textContent).toBe("Commande #1 — 100 XPF (paid)");
+  });
+
+  test("sort=date_asc ajoute ?sort=date_asc à la requête", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders(undefined, "date_asc");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("sort")).toBe("date_asc");
+    expect(url.searchParams.get("active")).toBe("true");
+  });
+
+  test("sort=date_desc ajoute ?sort=date_desc à la requête", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders(undefined, "date_desc");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("sort")).toBe("date_desc");
+  });
+
+  test("from et to ajoutent les paramètres de plage de dates", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders(undefined, undefined, "2024-02-01", "2024-03-31");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("from")).toBe("2024-02-01");
+    expect(url.searchParams.get("to")).toBe("2024-03-31");
+  });
+
+  test("tous les paramètres se combinent (status + sort + from + to)", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders("paid", "date_desc", "2024-02-01", "2024-03-31");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("active")).toBe("true");
+    expect(url.searchParams.get("status")).toBe("paid");
+    expect(url.searchParams.get("sort")).toBe("date_desc");
+    expect(url.searchParams.get("from")).toBe("2024-02-01");
+    expect(url.searchParams.get("to")).toBe("2024-03-31");
+  });
+
+  test("from seul sans to → seul from dans la requête", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders(undefined, undefined, "2024-02-01", undefined);
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("from")).toBe("2024-02-01");
+    expect(url.searchParams.has("to")).toBe(false);
+  });
+
+  test("sans sort → pas de param sort dans la requête", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders();
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.has("sort")).toBe(false);
+  });
+
+  test("sans from ni to → pas de paramètres de plage dans la requête", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders();
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.has("from")).toBe(false);
+    expect(url.searchParams.has("to")).toBe(false);
   });
 });
