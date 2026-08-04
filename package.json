@@ -1,7 +1,20 @@
 {
   "name": "shift-pilot-front",
-  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=18.14.0"
+  },
   "scripts": {
-    "test": "node --test tests/app.test.js"
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^30.0.0",
+    "jest-environment-jsdom": "^30.0.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testPathIgnorePatterns": ["/node_modules/", "/.paperclip/"],
+    "roots": ["<rootDir>/js/"]
   }
 }

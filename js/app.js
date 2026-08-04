@@ -17,9 +17,15 @@ export async function loadOrders(status) {
 
   const list = document.getElementById("orders-list");
   list.innerHTML = "";
+  if (orders.length === 0) {
+    const empty = document.createElement("li");
+    empty.textContent = "Aucune commande";
+    list.appendChild(empty);
+    return;
+  }
   for (const order of orders) {
     const item = document.createElement("li");
-    item.textContent = `Commande #${order.id} — ${order.total / 100} XPF (${order.status})`;
+    item.textContent = `Commande #${order.id} — ${order.totalXpf} XPF (${order.status})`;
     list.appendChild(item);
   }
 }
