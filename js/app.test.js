@@ -29,8 +29,8 @@ describe("loadActiveOrders", () => {
 
   test("liste non vide → une ligne par commande, pas de message vide", async () => {
     const orders = [
-      { id: 1, total: 2500, status: "pending" },
-      { id: 2, total: 5000, status: "ready" },
+      { id: 1, totalXpf: 25, status: "pending" },
+      { id: 2, totalXpf: 50, status: "ready" },
     ];
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(orders),
