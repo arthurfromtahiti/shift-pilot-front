@@ -1,6 +1,5 @@
 /**
- * Tests d'acceptation — CLA-121
- * État vide : afficher "Aucune commande" quand la liste est vide
+ * Tests d'acceptation — CLA-121 / CLA-233
  */
 
 const { loadActiveOrders } = require("./app.js");
@@ -29,8 +28,8 @@ describe("loadActiveOrders", () => {
 
   test("liste non vide → une ligne par commande, pas de message vide", async () => {
     const orders = [
-      { id: 1, totalXpf: 25, status: "pending" },
-      { id: 2, totalXpf: 50, status: "ready" },
+      { id: 1, total: 25, status: "pending" },
+      { id: 2, total: 50, status: "ready" },
     ];
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(orders),
@@ -45,9 +44,9 @@ describe("loadActiveOrders", () => {
     expect(list.textContent).not.toContain("Aucune commande");
   });
 
-  test("affiche order.totalXpf directement sans diviser par 100", async () => {
-    // Le back expose maintenant totalXpf (entier XPF déjà calculé) — CLA-126
-    const orders = [{ id: 42, totalXpf: 1500, status: "pending" }];
+  test("affiche order.total directement — le champ XPF natif du back (CLA-233)", async () => {
+    // CLA-195 a retiré totalXpf du back ; order.total est déjà en XPF, sans division
+    const orders = [{ id: 42, total: 1500, status: "pending" }];
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(orders),
     });
@@ -68,5 +67,35 @@ describe("loadActiveOrders", () => {
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("/orders?active=true")
     );
+  });
+
+  test("aucun texte « undefined » n'apparaît dans le rendu (régression CLA-233)", async () => {
+    const orders = [{ id: 7, total: 300, status: "ready" }];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(orders),
+    });
+
+    await loadActiveOrders();
+
+    const list = document.getElementById("orders-list");
+    expect(list.textContent).not.toContain("undefined");
+  });
+
+  test("la liste est ré-initialisée avant chaque rendu", async () => {
+    const firstCall = [{ id: 1, total: 100, status: "pending" }];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(firstCall),
+    });
+    await loadActiveOrders();
+
+    const secondCall = [{ id: 2, total: 200, status: "ready" }];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(secondCall),
+    });
+    await loadActiveOrders();
+
+    const list = document.getElementById("orders-list");
+    expect(list.children.length).toBe(1);
+    expect(list.children[0].textContent).toBe("Commande #2 — 200 XPF (ready)");
   });
 });
