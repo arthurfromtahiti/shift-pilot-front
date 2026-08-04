@@ -3,9 +3,9 @@
  * État vide : afficher "Aucune commande" quand la liste est vide
  */
 
-const { loadActiveOrders } = require("./app.js");
+const { loadOrders } = require("./app.js");
 
-describe("loadActiveOrders", () => {
+describe("loadOrders", () => {
   beforeEach(() => {
     document.body.innerHTML = '<ul id="orders-list"></ul>';
   });
@@ -19,7 +19,7 @@ describe("loadActiveOrders", () => {
       json: jest.fn().mockResolvedValue([]),
     });
 
-    await loadActiveOrders();
+    await loadOrders();
 
     const list = document.getElementById("orders-list");
     expect(list.textContent).toBe("Aucune commande");
@@ -36,7 +36,7 @@ describe("loadActiveOrders", () => {
       json: jest.fn().mockResolvedValue(orders),
     });
 
-    await loadActiveOrders();
+    await loadOrders();
 
     const list = document.getElementById("orders-list");
     expect(list.children.length).toBe(2);
@@ -52,7 +52,7 @@ describe("loadActiveOrders", () => {
       json: jest.fn().mockResolvedValue(orders),
     });
 
-    await loadActiveOrders();
+    await loadOrders();
 
     const list = document.getElementById("orders-list");
     expect(list.children[0].textContent).toBe("Commande #42 — 1500 XPF (pending)");
@@ -63,10 +63,24 @@ describe("loadActiveOrders", () => {
       json: jest.fn().mockResolvedValue([]),
     });
 
-    await loadActiveOrders();
+    await loadOrders();
 
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("/orders?active=true")
     );
+  });
+
+  test("order.totalXpf absent du back → affiche 'undefined XPF' (bug CLA-233)", async () => {
+    // CLA-195 a retiré totalXpf du back ; le back n'envoie plus que total
+    const orders = [{ id: 42, total: 1500, status: "pending" }];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(orders),
+    });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    // CE TEST ÉCHOUE sur ce commit : app.js lit encore order.totalXpf → affiche "undefined XPF"
+    expect(list.children[0].textContent).toBe("Commande #42 — 1500 XPF (pending)");
   });
 });
