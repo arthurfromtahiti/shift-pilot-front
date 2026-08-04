@@ -45,6 +45,19 @@ describe("loadActiveOrders", () => {
     expect(list.textContent).not.toContain("Aucune commande");
   });
 
+  test("affiche order.totalXpf directement sans diviser par 100", async () => {
+    // Le back expose maintenant totalXpf (entier XPF déjà calculé) — CLA-126
+    const orders = [{ id: 42, totalXpf: 1500, status: "pending" }];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(orders),
+    });
+
+    await loadActiveOrders();
+
+    const list = document.getElementById("orders-list");
+    expect(list.children[0].textContent).toBe("Commande #42 — 1500 XPF (pending)");
+  });
+
   test("appel réseau cible /orders?active=true", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue([]),
