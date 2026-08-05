@@ -37,7 +37,7 @@ async function loadOrders(status, sort, from, to) {
     const item = document.createElement("li");
     const date = formatDate(order.createdAt);
     const datePart = date ? ` — ${date}` : "";
-    item.textContent = `Commande #${order.id} — ${order.total} XPF (${order.status})${datePart}`;
+    item.textContent = `Commande #${order.id} — ${order.total} ${order.currency} (${order.status})${datePart}`;
     list.appendChild(item);
   }
 }

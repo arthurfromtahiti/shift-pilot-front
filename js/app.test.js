@@ -31,8 +31,8 @@ describe("loadOrders", () => {
 
   test("liste non vide → une ligne par commande, pas de message vide", async () => {
     const orders = [
-      { id: 1, total: 25, status: "pending" },
-      { id: 2, total: 50, status: "ready" },
+      { id: 1, total: 25, status: "pending", currency: "XPF" },
+      { id: 2, total: 50, status: "ready", currency: "XPF" },
     ];
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(orders),
@@ -49,7 +49,7 @@ describe("loadOrders", () => {
 
   test("affiche order.total directement sans transformation", async () => {
     // Le back stocke et expose total déjà en XPF, sans champ totalXpf dérivé — CLA-195
-    const orders = [{ id: 42, total: 1500, status: "pending" }];
+    const orders = [{ id: 42, total: 1500, status: "pending", currency: "XPF" }];
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(orders),
     });
@@ -97,6 +97,40 @@ describe("loadOrders", () => {
   });
 });
 
+describe("loadOrders — CLA-262 affichage devise", () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<ul id="orders-list"></ul>';
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test("affiche order.currency à côté du montant — CLA-262", async () => {
+    const orders = [{ id: 1, total: 42, status: "paid", currency: "EUR" }];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(orders),
+    });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    expect(list.children[0].textContent).toBe("Commande #1 — 42 EUR (paid)");
+  });
+
+  test("affiche XPF quand currency vaut XPF — CLA-262", async () => {
+    const orders = [{ id: 7, total: 500, status: "paid", currency: "XPF" }];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(orders),
+    });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    expect(list.children[0].textContent).toBe("Commande #7 — 500 XPF (paid)");
+  });
+});
+
 describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
   beforeEach(() => {
     document.body.innerHTML = '<ul id="orders-list"></ul>';
@@ -107,7 +141,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
   });
 
   test("affiche createdAt formatté quand présent dans la commande", async () => {
-    const orders = [{ id: 1, total: 100, status: "paid", createdAt: "2024-01-10T08:00:00Z" }];
+    const orders = [{ id: 1, total: 100, status: "paid", currency: "XPF", createdAt: "2024-01-10T08:00:00Z" }];
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(orders),
     });
@@ -122,7 +156,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
   });
 
   test("n'affiche pas de date si createdAt absent — rétrocompatibilité", async () => {
-    const orders = [{ id: 1, total: 100, status: "paid" }];
+    const orders = [{ id: 1, total: 100, status: "paid", currency: "XPF" }];
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(orders),
     });
