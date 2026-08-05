@@ -131,6 +131,96 @@ describe("loadOrders — CLA-262 affichage devise", () => {
   });
 });
 
+describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de client", () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<ul id="orders-list"></ul>';
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test("customerName envoie ?customerName=<valeur> dans la requête", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders(undefined, undefined, undefined, undefined, "Dupont");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("customerName")).toBe("Dupont");
+    expect(url.searchParams.get("active")).toBe("true");
+  });
+
+  test("customerName vide → pas de paramètre customerName dans la requête", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders();
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.has("customerName")).toBe(false);
+  });
+
+  test("customerName avec résultat vide → affiche « Aucune commande trouvée »", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders(undefined, undefined, undefined, undefined, "Dupont");
+
+    const list = document.getElementById("orders-list");
+    expect(list.textContent).toBe("Aucune commande trouvée");
+    expect(list.children.length).toBe(1);
+    expect(list.children[0].tagName).toBe("LI");
+  });
+
+  test("sans customerName et liste vide → affiche toujours « Aucune commande »", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    expect(list.textContent).toBe("Aucune commande");
+  });
+
+  test("customerName se combine avec status, sort, from, to", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([]),
+    });
+
+    await loadOrders("paid", "date_desc", "2024-01-01", "2024-12-31", "Jean");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("active")).toBe("true");
+    expect(url.searchParams.get("status")).toBe("paid");
+    expect(url.searchParams.get("sort")).toBe("date_desc");
+    expect(url.searchParams.get("from")).toBe("2024-01-01");
+    expect(url.searchParams.get("to")).toBe("2024-12-31");
+    expect(url.searchParams.get("customerName")).toBe("Jean");
+  });
+
+  test("customerName avec résultats affiche les commandes filtrées", async () => {
+    const orders = [
+      { id: 101, userId: 2, total: 42, status: "paid", createdAt: "2024-01-10T08:00:00Z", clientName: "Jean Dupont", currency: "XPF" },
+    ];
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(orders),
+    });
+
+    await loadOrders(undefined, undefined, undefined, undefined, "Dupont");
+
+    const list = document.getElementById("orders-list");
+    expect(list.children.length).toBe(1);
+    expect(list.children[0].textContent).toContain("Commande #101");
+    expect(list.children[0].textContent).toContain("42 XPF");
+    expect(list.textContent).not.toContain("Aucune commande");
+  });
+});
+
 describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
   beforeEach(() => {
     document.body.innerHTML = '<ul id="orders-list"></ul>';
