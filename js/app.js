@@ -14,13 +14,14 @@ function formatDate(isoString) {
   }).format(new Date(isoString));
 }
 
-async function loadOrders(status, sort, from, to) {
+async function loadOrders(status, sort, from, to, customerName) {
   const url = new URL(`${API_BASE_URL}/orders`);
   url.searchParams.set("active", "true");
   if (status) url.searchParams.set("status", status);
   if (sort) url.searchParams.set("sort", sort);
   if (from) url.searchParams.set("from", from);
   if (to) url.searchParams.set("to", to);
+  if (customerName) url.searchParams.set("customerName", customerName);
 
   const response = await fetch(url.toString());
   const orders = await response.json();
@@ -29,7 +30,7 @@ async function loadOrders(status, sort, from, to) {
   list.innerHTML = "";
   if (orders.length === 0) {
     const empty = document.createElement("li");
-    empty.textContent = "Aucune commande";
+    empty.textContent = customerName ? "Aucune commande trouvée" : "Aucune commande";
     list.appendChild(empty);
     return;
   }
@@ -79,16 +80,31 @@ if (typeof document !== "undefined") {
     toInput.type = "date";
     toInput.id = "to-filter";
 
+    const customerNameLabel = document.createElement("label");
+    customerNameLabel.htmlFor = "customer-name-filter";
+    customerNameLabel.textContent = " Client : ";
+
+    const customerNameInput = document.createElement("input");
+    customerNameInput.type = "text";
+    customerNameInput.id = "customer-name-filter";
+    customerNameInput.placeholder = "Nom du client";
+
     const list = document.getElementById("orders-list");
-    list.before(sortLabel, sortSelect, fromLabel, fromInput, toLabel, toInput);
+    list.before(sortLabel, sortSelect, fromLabel, fromInput, toLabel, toInput, customerNameLabel, customerNameInput);
 
     const reload = () =>
-      loadOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value);
+      loadOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value, customerNameInput.value);
 
     statusSelect.addEventListener("change", reload);
     sortSelect.addEventListener("change", reload);
     fromInput.addEventListener("change", reload);
     toInput.addEventListener("change", reload);
+
+    let debounceTimer;
+    customerNameInput.addEventListener("input", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(reload, 300);
+    });
 
     loadOrders();
   });
