@@ -57,6 +57,8 @@ if (typeof document !== "undefined") {
       ["", "Date (défaut)"],
       ["date_asc", "Date croissante"],
       ["date_desc", "Date décroissante"],
+      ["amount_asc", "Montant croissant"],
+      ["amount_desc", "Montant décroissant"],
     ]) {
       const opt = document.createElement("option");
       opt.value = value;
