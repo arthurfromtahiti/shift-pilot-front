@@ -1,11 +1,16 @@
 /**
- * Tests d'acceptation — CLA-121, CLA-95, CLA-195, CLA-227
+ * Tests d'acceptation — CLA-121, CLA-95, CLA-195, CLA-227, SHIAAAAAAAAAAAAAAAAAAAAAAAA-250
  * État vide : afficher "Aucune commande" quand la liste est vide
  */
 
 const fs = require("fs");
 const path = require("path");
 const { loadOrders } = require("./app.js");
+
+const paginatedResponse = (orders, page = 1, totalPages = 1) => ({
+  orders,
+  pagination: { total: orders.length, page, limit: 20, totalPages },
+});
 
 describe("loadOrders", () => {
   beforeEach(() => {
@@ -18,7 +23,7 @@ describe("loadOrders", () => {
 
   test("liste vide → affiche « Aucune commande » dans #orders-list", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders();
@@ -35,7 +40,7 @@ describe("loadOrders", () => {
       { id: 2, total: 50, status: "ready", currency: "XPF" },
     ];
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue(orders),
+      json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
     await loadOrders();
@@ -51,7 +56,7 @@ describe("loadOrders", () => {
     // Le back stocke et expose total déjà en XPF, sans champ totalXpf dérivé — CLA-195
     const orders = [{ id: 42, total: 1500, status: "pending", currency: "XPF" }];
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue(orders),
+      json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
     await loadOrders();
@@ -62,7 +67,7 @@ describe("loadOrders", () => {
 
   test("appel réseau par défaut cible /orders?active=true sans status", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders();
@@ -76,7 +81,7 @@ describe("loadOrders", () => {
 
   test("appel réseau avec status envoie active=true ET status — CLA-95", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders("paid");
@@ -109,7 +114,7 @@ describe("loadOrders — CLA-262 affichage devise", () => {
   test("affiche order.currency à côté du montant — CLA-262", async () => {
     const orders = [{ id: 1, total: 42, status: "paid", currency: "EUR" }];
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue(orders),
+      json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
     await loadOrders();
@@ -121,7 +126,7 @@ describe("loadOrders — CLA-262 affichage devise", () => {
   test("affiche XPF quand currency vaut XPF — CLA-262", async () => {
     const orders = [{ id: 7, total: 500, status: "paid", currency: "XPF" }];
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue(orders),
+      json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
     await loadOrders();
@@ -142,7 +147,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
 
   test("customerName envoie ?customerName=<valeur> dans la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders(undefined, undefined, undefined, undefined, "Dupont");
@@ -154,7 +159,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
 
   test("customerName vide → pas de paramètre customerName dans la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders();
@@ -165,7 +170,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
 
   test("customerName avec résultat vide → affiche « Aucune commande trouvée »", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders(undefined, undefined, undefined, undefined, "Dupont");
@@ -178,7 +183,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
 
   test("sans customerName et liste vide → affiche toujours « Aucune commande »", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders();
@@ -189,7 +194,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
 
   test("customerName se combine avec status, sort, from, to", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders("paid", "date_desc", "2024-01-01", "2024-12-31", "Jean");
@@ -208,7 +213,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
       { id: 101, userId: 2, total: 42, status: "paid", createdAt: "2024-01-10T08:00:00Z", clientName: "Jean Dupont", currency: "XPF" },
     ];
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue(orders),
+      json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
     await loadOrders(undefined, undefined, undefined, undefined, "Dupont");
@@ -233,7 +238,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
   test("affiche createdAt formatté quand présent dans la commande", async () => {
     const orders = [{ id: 1, total: 100, status: "paid", currency: "XPF", createdAt: "2024-01-10T08:00:00Z" }];
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue(orders),
+      json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
     await loadOrders();
@@ -248,7 +253,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
   test("n'affiche pas de date si createdAt absent — rétrocompatibilité", async () => {
     const orders = [{ id: 1, total: 100, status: "paid", currency: "XPF" }];
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue(orders),
+      json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
     await loadOrders();
@@ -259,7 +264,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("sort=date_asc ajoute ?sort=date_asc à la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders(undefined, "date_asc");
@@ -271,7 +276,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("sort=date_desc ajoute ?sort=date_desc à la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders(undefined, "date_desc");
@@ -282,7 +287,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("from et to ajoutent les paramètres de plage de dates", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders(undefined, undefined, "2024-02-01", "2024-03-31");
@@ -294,7 +299,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("tous les paramètres se combinent (status + sort + from + to)", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders("paid", "date_desc", "2024-02-01", "2024-03-31");
@@ -309,7 +314,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("from seul sans to → seul from dans la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders(undefined, undefined, "2024-02-01", undefined);
@@ -321,7 +326,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("sort=amount_asc ajoute ?sort=amount_asc à la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders(undefined, "amount_asc");
@@ -333,7 +338,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("sort=amount_desc ajoute ?sort=amount_desc à la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders(undefined, "amount_desc");
@@ -345,7 +350,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("sans sort → pas de param sort dans la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders();
@@ -356,7 +361,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("sans from ni to → pas de paramètres de plage dans la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders();
@@ -364,5 +369,124 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
     const url = new URL(global.fetch.mock.calls[0][0]);
     expect(url.searchParams.has("from")).toBe(false);
     expect(url.searchParams.has("to")).toBe(false);
+  });
+});
+
+describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <ul id="orders-list"></ul>
+      <button id="pagination-prev" disabled>Précédent</button>
+      <span id="pagination-info"></span>
+      <button id="pagination-next">Suivant</button>
+    `;
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test("envoie page=1 et limit=20 par défaut", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
+    });
+
+    await loadOrders();
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("page")).toBe("1");
+    expect(url.searchParams.get("limit")).toBe("20");
+  });
+
+  test("envoie le numéro de page passé en paramètre", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 40, page: 2, limit: 20, totalPages: 2 } }),
+    });
+
+    await loadOrders(undefined, undefined, undefined, undefined, undefined, 2);
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("page")).toBe("2");
+  });
+
+  test("lit les commandes depuis response.orders", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({
+        orders: [{ id: 5, total: 100, status: "paid", currency: "XPF" }],
+        pagination: { total: 1, page: 1, limit: 20, totalPages: 1 },
+      }),
+    });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    expect(list.children[0].textContent).toBe("Commande #5 — 100 XPF (paid)");
+  });
+
+  test("bouton Précédent désactivé à la page 1", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 40, page: 1, limit: 20, totalPages: 2 } }),
+    });
+
+    await loadOrders();
+
+    expect(document.getElementById("pagination-prev").disabled).toBe(true);
+  });
+
+  test("bouton Suivant désactivé à la dernière page", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 40, page: 2, limit: 20, totalPages: 2 } }),
+    });
+
+    await loadOrders(undefined, undefined, undefined, undefined, undefined, 2);
+
+    expect(document.getElementById("pagination-next").disabled).toBe(true);
+  });
+
+  test("bouton Précédent activé quand page > 1", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 40, page: 2, limit: 20, totalPages: 2 } }),
+    });
+
+    await loadOrders(undefined, undefined, undefined, undefined, undefined, 2);
+
+    expect(document.getElementById("pagination-prev").disabled).toBe(false);
+  });
+
+  test("bouton Suivant activé quand page < totalPages", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 40, page: 1, limit: 20, totalPages: 2 } }),
+    });
+
+    await loadOrders();
+
+    expect(document.getElementById("pagination-next").disabled).toBe(false);
+  });
+
+  test("info de pagination affiche la page courante et le total", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 40, page: 2, limit: 20, totalPages: 2 } }),
+    });
+
+    await loadOrders(undefined, undefined, undefined, undefined, undefined, 2);
+
+    expect(document.getElementById("pagination-info").textContent).toBe("Page 2 / 2");
+  });
+
+  test("les filtres existants sont transmis avec les paramètres de pagination", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 0, page: 2, limit: 20, totalPages: 0 } }),
+    });
+
+    await loadOrders("paid", "date_desc", "2024-01-01", "2024-12-31", "Jean", 2);
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("page")).toBe("2");
+    expect(url.searchParams.get("limit")).toBe("20");
+    expect(url.searchParams.get("status")).toBe("paid");
+    expect(url.searchParams.get("sort")).toBe("date_desc");
+    expect(url.searchParams.get("from")).toBe("2024-01-01");
+    expect(url.searchParams.get("to")).toBe("2024-12-31");
+    expect(url.searchParams.get("customerName")).toBe("Jean");
   });
 });
