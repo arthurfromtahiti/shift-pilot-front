@@ -5,6 +5,9 @@ const API_BASE_URL =
   (typeof window !== "undefined" && window.API_BASE_URL) ||
   "http://localhost:3000";
 
+const CURRENT_USER_ID =
+  (typeof window !== "undefined" && window.CURRENT_USER_ID) || null;
+
 function formatDate(isoString) {
   if (!isoString) return null;
   return new Intl.DateTimeFormat("fr-FR", {
@@ -14,7 +17,21 @@ function formatDate(isoString) {
   }).format(new Date(isoString));
 }
 
-async function loadOrders(status, sort, from, to) {
+async function cancelOrder(orderId, currentUserId) {
+  const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
+    method: "POST",
+    headers: { "X-User-Id": String(currentUserId) },
+  });
+  if (response.status === 200) {
+    return await response.json();
+  }
+  if (response.status === 401) throw new Error("Non autorisé");
+  if (response.status === 403) throw new Error("Cette commande ne vous appartient pas");
+  if (response.status === 409) throw new Error("Cette commande ne peut plus être annulée");
+  throw new Error("Erreur inconnue");
+}
+
+async function loadOrders(status, sort, from, to, currentUserId) {
   const url = new URL(`${API_BASE_URL}/orders`);
   url.searchParams.set("active", "true");
   if (status) url.searchParams.set("status", status);
@@ -37,7 +54,31 @@ async function loadOrders(status, sort, from, to) {
     const item = document.createElement("li");
     const date = formatDate(order.createdAt);
     const datePart = date ? ` — ${date}` : "";
-    item.textContent = `Commande #${order.id} — ${order.total} ${order.currency} (${order.status})${datePart}`;
+    const currency = order.currency;
+
+    const textSpan = document.createElement("span");
+    textSpan.textContent = `Commande #${order.id} — ${order.total} ${currency} (${order.status})${datePart}`;
+    item.appendChild(textSpan);
+
+    if (order.status === "paid" && currentUserId != null && order.userId === currentUserId) {
+      const btn = document.createElement("button");
+      btn.textContent = "Annuler";
+      btn.addEventListener("click", async () => {
+        try {
+          await cancelOrder(order.id, currentUserId);
+          textSpan.textContent = `Commande #${order.id} — ${order.total} ${currency} (cancelled_by_client)${datePart}`;
+          btn.remove();
+        } catch (err) {
+          item.querySelectorAll("[data-error]").forEach((el) => el.remove());
+          const errorSpan = document.createElement("span");
+          errorSpan.setAttribute("data-error", "true");
+          errorSpan.textContent = ` — ${err.message}`;
+          item.appendChild(errorSpan);
+        }
+      });
+      item.appendChild(btn);
+    }
+
     list.appendChild(item);
   }
 }
@@ -83,19 +124,19 @@ if (typeof document !== "undefined") {
     list.before(sortLabel, sortSelect, fromLabel, fromInput, toLabel, toInput);
 
     const reload = () =>
-      loadOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value);
+      loadOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value, CURRENT_USER_ID);
 
     statusSelect.addEventListener("change", reload);
     sortSelect.addEventListener("change", reload);
     fromInput.addEventListener("change", reload);
     toInput.addEventListener("change", reload);
 
-    loadOrders();
+    reload();
   });
 }
 
 // Chargé à la fois comme module natif par index.html (<script type="module">, pas de "module" global)
 // et via require() par les tests Jest (CommonJS) — d'où l'export gardé plutôt qu'un mot-clé "export".
 if (typeof module !== "undefined") {
-  module.exports = { loadOrders };
+  module.exports = { loadOrders, cancelOrder };
 }
