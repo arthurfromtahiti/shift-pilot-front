@@ -5,6 +5,8 @@ const API_BASE_URL =
   (typeof window !== "undefined" && window.API_BASE_URL) ||
   "http://localhost:3000";
 
+const LIMIT = 20;
+
 function formatDate(isoString) {
   if (!isoString) return null;
   return new Intl.DateTimeFormat("fr-FR", {
@@ -14,7 +16,7 @@ function formatDate(isoString) {
   }).format(new Date(isoString));
 }
 
-async function loadOrders(status, sort, from, to, customerName) {
+async function loadOrders(status, sort, from, to, customerName, page = 1) {
   const url = new URL(`${API_BASE_URL}/orders`);
   url.searchParams.set("active", "true");
   if (status) url.searchParams.set("status", status);
@@ -22,9 +24,13 @@ async function loadOrders(status, sort, from, to, customerName) {
   if (from) url.searchParams.set("from", from);
   if (to) url.searchParams.set("to", to);
   if (customerName) url.searchParams.set("customerName", customerName);
+  url.searchParams.set("page", String(page));
+  url.searchParams.set("limit", String(LIMIT));
 
   const response = await fetch(url.toString());
-  const orders = await response.json();
+  const data = await response.json();
+  const orders = data.orders;
+  const pagination = data.pagination;
 
   const list = document.getElementById("orders-list");
   list.innerHTML = "";
@@ -32,20 +38,30 @@ async function loadOrders(status, sort, from, to, customerName) {
     const empty = document.createElement("li");
     empty.textContent = customerName ? "Aucune commande trouvée" : "Aucune commande";
     list.appendChild(empty);
-    return;
+  } else {
+    for (const order of orders) {
+      const item = document.createElement("li");
+      const date = formatDate(order.createdAt);
+      const datePart = date ? ` — ${date}` : "";
+      item.textContent = `Commande #${order.id} — ${order.total} ${order.currency} (${order.status})${datePart}`;
+      list.appendChild(item);
+    }
   }
-  for (const order of orders) {
-    const item = document.createElement("li");
-    const date = formatDate(order.createdAt);
-    const datePart = date ? ` — ${date}` : "";
-    item.textContent = `Commande #${order.id} — ${order.total} ${order.currency} (${order.status})${datePart}`;
-    list.appendChild(item);
+
+  const prevBtn = document.getElementById("pagination-prev");
+  const nextBtn = document.getElementById("pagination-next");
+  const pageInfo = document.getElementById("pagination-info");
+  if (prevBtn && nextBtn && pageInfo && pagination) {
+    prevBtn.disabled = pagination.page <= 1;
+    nextBtn.disabled = pagination.page >= pagination.totalPages;
+    pageInfo.textContent = `Page ${pagination.page} / ${pagination.totalPages}`;
   }
 }
 
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded", () => {
     const statusSelect = document.getElementById("status-filter");
+    let currentPage = 1;
 
     const sortLabel = document.createElement("label");
     sortLabel.htmlFor = "sort-filter";
@@ -94,8 +110,36 @@ if (typeof document !== "undefined") {
     const list = document.getElementById("orders-list");
     list.before(sortLabel, sortSelect, fromLabel, fromInput, toLabel, toInput, customerNameLabel, customerNameInput);
 
-    const reload = () =>
-      loadOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value, customerNameInput.value);
+    const prevBtn = document.createElement("button");
+    prevBtn.id = "pagination-prev";
+    prevBtn.textContent = "Précédent";
+    prevBtn.disabled = true;
+
+    const pageInfo = document.createElement("span");
+    pageInfo.id = "pagination-info";
+
+    const nextBtn = document.createElement("button");
+    nextBtn.id = "pagination-next";
+    nextBtn.textContent = "Suivant";
+
+    list.after(prevBtn, pageInfo, nextBtn);
+
+    const reload = () => {
+      currentPage = 1;
+      loadOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value, customerNameInput.value, currentPage);
+    };
+
+    prevBtn.addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage--;
+        loadOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value, customerNameInput.value, currentPage);
+      }
+    });
+
+    nextBtn.addEventListener("click", () => {
+      currentPage++;
+      loadOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value, customerNameInput.value, currentPage);
+    });
 
     statusSelect.addEventListener("change", reload);
     sortSelect.addEventListener("change", reload);
@@ -108,7 +152,7 @@ if (typeof document !== "undefined") {
       debounceTimer = setTimeout(reload, 300);
     });
 
-    loadOrders();
+    loadOrders(undefined, undefined, undefined, undefined, undefined, currentPage);
   });
 }
 

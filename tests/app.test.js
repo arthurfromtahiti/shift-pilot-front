@@ -21,10 +21,13 @@ global.window = { API_BASE_URL: "http://test.local" };
 global.fetch = async (url) => {
   fetchedUrls.push(url.toString());
   return {
-    json: async () => [
-      { id: 1, total: 1000, status: "paid" },
-      { id: 2, total: 2000, status: "cancelled" },
-    ],
+    json: async () => ({
+      orders: [
+        { id: 1, total: 1000, status: "paid" },
+        { id: 2, total: 2000, status: "cancelled" },
+      ],
+      pagination: { total: 2, page: 1, limit: 20, totalPages: 1 },
+    }),
   };
 };
 global.document = {
