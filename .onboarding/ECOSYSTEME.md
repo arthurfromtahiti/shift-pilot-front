@@ -13,38 +13,60 @@
 | **shift-pilot-back** | Fournisseur d'API | API HTTP Read-only, données mémoire, deux ressources (utilisateurs, commandes) | ✅ Validé : PROJECT_CONTEXT.md, CDC_FONCTIONNEL.md, CARTOGRAPHIE_CODE.md, CAHIER_RECETTE.md |
 | **shift-pilot-front** | Consommateur HTTP | Client web statique, une page HTML, affichage des commandes actives | ✅ Validé : PROJECT_CONTEXT.md, CDC_FONCTIONNEL.md, audits (FUNCTIONAL, ARCHITECTURE, SECURITY) |
 
-**Articulation** : frontend → HTTP → backend. Aucune persistance partagée, aucune queue, aucun cache — appel direct au démarrage de page.
+**Articulation** : frontend → HTTP → backend. Aucune persistance partagée, aucune queue, aucun cache — appel direct au démarrage de page et à chaque interaction utilisateur (changement filtres, saisie recherche client).
 
 ---
 
 ## Contrat d'intégration prouvé
 
-### Endpoint consommé
+### Endpoints consommés
 
-**Route** : `GET /orders?active=true`  
-**Accepteur** : `shift-pilot-back` — Preuves : `src/server.js:18-26`, `src/routes/orders.js:3-26`  
-**Consommateur** : `shift-pilot-front` — Preuve : `js/app.js:7` (`fetch(\`${API_BASE_URL}/orders?active=true\`)`)
+**Route primaire** : `GET /orders?active=true`  
+**Accepteur** : `shift-pilot-back` — Preuves : `src/server.js:27-61`, `src/routes/orders.js:14-45`  
+**Consommateur** : `shift-pilot-front` — Preuve : `js/app.js:19` (paramètre `active=true` systématiquement défini)
+
+**Route avec filtre optionnel** : `GET /orders?active=true&customerName=<valeur>`  
+**Accepteur** : `shift-pilot-back` — Preuves : `src/server.js:34, 58`, `src/routes/orders.js:38-43` (`filterByCustomerName`)  
+**Consommateur** : `shift-pilot-front` — Preuve : `js/app.js:24, 96` (paramètre `customerName` passé depuis champ input, SHIAAAAAAAAAAAAAAAAAAAAAAAA-7)
 
 ### Schéma de réponse
 
 **Structure observable** : tableau JSON d'objets `order` avec champs :
 - `id` : identifiant unique (nombre ou chaîne)
-- `total` : montant (entier)
-- `status` : état (chaîne)
+- `userId` : identifiant de l'utilisateur propriétaire (entier)
+- `total` : montant (entier, en XPF)
+- `status` : état (chaîne ∈ {`"paid"`, `"cancelled"`})
+- `createdAt` : timestamp ISO 8601 UTC (chaîne)
+- `clientName` : nom du client (chaîne, résolu depuis le userId lors de l'enrichissement backend)
+- `currency` : devise (chaîne, toujours `"XPF"`)
 
-**Preuves côté backend** : `src/routes/orders.js:3-8` (données définies), `src/server.js:25` (sérialisation JSON)  
-**Preuves côté frontend** : `js/app.js:14` (lecture des trois champs), `CDC_FONCTIONNEL.md:94-101` (table des champs)
+**Champs additionnels depuis l'enrichissement backend** : `clientName`, `currency` ajoutés au-delà du modèle de données brut (src/server.js:54-56). Le champ `clientName` est cruciale pour le filtre `customerName` — contient le nom de l'utilisateur auquel la commande est liée.
+
+**Preuves côté backend** : `src/routes/orders.js:7-12` (données définies), `src/server.js:54-56, 60` (enrichissement et sérialisation JSON)  
+**Preuves côté frontend** : `js/app.js:33, 41` (rendu avec clientName optionnel, message "Aucune commande trouvée" basé sur paramètre customerName)
 
 ### Traitement côté frontend
 
-**Déclencheur** : événement `DOMContentLoaded`  
-**Déroulement** :
+**Déclencheur initial** : événement `DOMContentLoaded`  
+**Déroulement initial** :
 1. Résolution de l'URL : `window.API_BASE_URL || "http://localhost:3000"`
-2. Appel `fetch(\`${API_BASE_URL}/orders?active=true\`)`
-3. Désérialisation `response.json()`
-4. Boucle de rendu : pour chaque `order`, création d'une ligne `<li>Commande #<id> — <total/100> XPF (<status>)</li>`
+2. Création des contrôles de filtrage (status, sort, from, to, customerName)
+3. Appel initial `loadOrders()` sans paramètres optionnels → `fetch(\`${API_BASE_URL}/orders?active=true\`)`
+4. Désérialisation `response.json()`
+5. Boucle de rendu : pour chaque `order`, création d'une ligne `<li>Commande #<id> — <total> <currency> (<status>)<datePart></li>`
 
-**Preuves** : `js/app.js:4-16`, workflow amont `WORKFLOW_AFFICHAGE_COMMANDES_ACTIVES.md:26-48`
+**Déclencheur (filtre client)** : événement `input` sur le champ `customer-name-filter`  
+**Déroulement avec filtre** (SHIAAAAAAAAAAAAAAAAAAAAAAAA-7) :
+1. Utilisateur saisit du texte dans l'input `customerName` (placeholder : "Nom du client")
+2. Débounce 300ms sur événement `input`
+3. Appel `loadOrders(..., customerNameInput.value)` → `fetch(\`${API_BASE_URL}/orders?active=true&customerName=<valeur>\`)`
+4. Backend applique `filterByCustomerName()` (substring, insensible à la casse, après enrichissement `clientName`)
+5. Rendu différencié : 
+   - Si résultat vide **et** customerName fourni : affiche "Aucune commande trouvée"
+   - Si résultat vide **sans** customerName : affiche "Aucune commande"
+   - Sinon : rendu liste avec `clientName` du serveur
+
+**Preuves** : `js/app.js:4-110`, listeners aux lignes 98-107 (changement filtres), 104-107 (debounce sur customerName)
 
 ---
 
@@ -76,12 +98,21 @@
 **Interprétation** : API intentionnellement publique ou gestion d'auth par cookie/session (non détectable).  
 **Verdict** : **Hypothèse** — l'intégration fonctionne en config locale ; l'ajout d'une authentification côté backend cassera le frontend sans modification parallèle.
 
-### 4. **Gestion d'erreur et timeouts**
+### 4. **Enrichissement clientName au backend**
+
+**Observation backend** : chaque commande retournée expose un champ `clientName` (résolu depuis `userId`).  
+**Preuve backend** : `src/server.js:54-56` (enrichissement après filtrage), `src/routes/users.js:13-15` (lookup `getUserById`)  
+**Observation frontend** : le filtre `customerName` cherche dans les valeurs de `clientName` retournées.  
+**Preuve frontend** : `js/app.js:24` (passé comme paramètre), backend `src/routes/orders.js:38-43` (filtre utilise `o.clientName`)  
+**Interprétation** : le backend enrichit les commandes **avant** d'appliquer le filtre client — si un `userId` sans utilisateur correspondant existe (cas dégénéré), le `clientName` sera `null` et la commande sera exclue du résultat.  
+**Verdict** : **Prouvé et documenté** — le design du filtre dépend explicitement de cet enrichissement.
+
+### 5. **Gestion d'erreur et timeouts**
 
 **Backend** : pas de middleware d'erreur global ; crash du processus en cas d'exception non attrapée.  
 **Frontend** : pas de gestion d'erreur réseau ; pas de vérification `response.ok` ; pas de timeout.  
 **Impact** : En cas d'erreur 5xx du backend, le frontend reçoit HTML au lieu de JSON, provoquant une `SyntaxError` silencieuse et affichage d'une liste vide.  
-**Preuves** : backend `src/server.js` (pas de try/catch global), frontend `js/app.js:6-8` (pas de `.catch()`)  
+**Preuves** : backend `src/server.js` (pas de try/catch global), frontend `js/app.js:26-27` (pas de `.catch()`)  
 **Verdict** : **Connu et non traité** — acceptable pour un prototype.
 
 ---
@@ -151,22 +182,28 @@
 
 **Pour comprendre les endpoints** :
 - `PROJECT_CONTEXT.md` — contexte projet, domaines, points d'attention
-- `CDC_FONCTIONNEL.md` — règles métier, parcours, bug volontaire, détails du filtre `active=true`
-- `CARTOGRAPHIE_CODE.md` — structure du code, points chauds
+- `CDC_FONCTIONNEL.md` — règles métier, parcours, bug volontaire, détails du filtre `active=true`, **filtre `customerName` (Variante 2e, SHIAAAAAAAAAAAAAAAAAAAAAAAA-7)**
+- `CARTOGRAPHIE_CODE.md` — structure du code, points chauds, **fonctions `normalize()` et `filterByCustomerName()`**
 
 **Pour la recette** :
 - `CAHIER_RECETTE.md` — scénarios 1-7, cas du bug documenté
-- Preuves code : `src/server.js`, `src/routes/users.js`, `src/routes/orders.js`
+- Preuves code : `src/server.js` (lines 34, 54-56, 58), `src/routes/users.js`, `src/routes/orders.js` (lines 34-43)
 
 ### shift-pilot-front
 
 **Pour comprendre la consommation API** :
 - `PROJECT_CONTEXT.md` — architecture minimale, points d'attention (bug, gestion d'erreur, config)
 - `CDC_FONCTIONNEL.md` — parcours détaillé (`DOMContentLoaded` → fetch → rendu), hypothèses
-- Preuves code : `index.html`, `js/app.js`
+- Preuves code : `index.html`, `js/app.js` (lines 4-110, notamment interface recherche client aux lines 83-93, debounce aux lines 104-107)
 
 **Pour les audits** :
 - Audits disponibles : FUNCTIONAL, ARCHITECTURE, SECURITY, TESTING (tous validés)
+
+**Notes sur l'intégration SHIAAAAAAAAAAAAAAAAAAAAAAAA-7** :
+- Nouvelles lignes HTML générées dynamiquement : champ input `customer-name-filter` (js/app.js:87-90)
+- Intégration paramètre `customerName` dans la signature de `loadOrders()` (js/app.js:17)
+- Débounce 300ms sur événement `input` du champ client pour améliorer UX (js/app.js:104-107)
+- Message d'erreur différencié : "Aucune commande trouvée" si recherche sans résultat, "Aucune commande" si liste globale vide (js/app.js:33)
 
 ---
 
