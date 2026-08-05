@@ -340,6 +340,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
     const url = new URL(global.fetch.mock.calls[0][0]);
     expect(url.searchParams.get("sort")).toBe("amount_desc");
+    expect(url.searchParams.get("active")).toBe("true");
   });
 
   test("sans sort → pas de param sort dans la requête", async () => {
