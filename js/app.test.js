@@ -906,3 +906,26 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-367 gestion des erreurs ré
     expect(list.children[0].textContent).toBe("Erreur lors du chargement des commandes");
   });
 });
+
+describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-387 garde sur data.orders absent", () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<ul id="orders-list"></ul>';
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test("data.orders absent → ne lève pas d'exception et affiche un message neutre", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({}),
+    });
+
+    await expect(loadOrders()).resolves.toBeUndefined();
+
+    const list = document.getElementById("orders-list");
+    expect(list.children.length).toBe(1);
+    expect(list.children[0].textContent).toBe("Aucune commande");
+  });
+});

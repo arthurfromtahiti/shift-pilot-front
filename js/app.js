@@ -62,7 +62,7 @@ async function loadOrders(status, sort, from, to, customerName, page = 1) {
   const orders = data.orders;
   const pagination = data.pagination;
 
-  if (orders.length === 0) {
+  if (!orders || orders.length === 0) {
     const empty = document.createElement("li");
     empty.textContent = customerName ? "Aucune commande trouvée" : "Aucune commande";
     list.appendChild(empty);
