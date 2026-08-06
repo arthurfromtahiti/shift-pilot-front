@@ -58,21 +58,21 @@ test("le sélecteur est présent dans index.html avec les statuts du contrat bac
   assert.ok(!html.includes('value="delivered"'), "l'option delivered ne doit pas être présente");
 });
 
-test("requête par défaut (sans status) envoie active=true sans status", async () => {
+test("requête par défaut (Tous) n'envoie pas active et n'envoie pas status — SHIAAAAAAAAAAAAAAAAAAAAAAAA-358", async () => {
   fetchedUrls.length = 0;
   await loadOrders();
   assert.equal(fetchedUrls.length, 1, "une seule requête doit être effectuée");
   const url = new URL(fetchedUrls[0]);
-  assert.equal(url.searchParams.get("active"), "true", "active=true doit être présent");
+  assert.equal(url.searchParams.has("active"), false, "active ne doit pas être présent pour afficher toutes les commandes");
   assert.equal(url.searchParams.has("status"), false, "status ne doit pas être présent");
 });
 
-test("requête avec status envoie active=true ET status", async () => {
+test("requête avec status envoie status sans active", async () => {
   fetchedUrls.length = 0;
   await loadOrders("paid");
   assert.equal(fetchedUrls.length, 1, "une seule requête doit être effectuée");
   const url = new URL(fetchedUrls[0]);
-  assert.equal(url.searchParams.get("active"), "true", "active=true doit être présent");
+  assert.equal(url.searchParams.has("active"), false, "active ne doit pas être présent");
   assert.equal(url.searchParams.get("status"), "paid", "status=paid doit être présent");
 });
 

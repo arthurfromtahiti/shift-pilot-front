@@ -65,21 +65,19 @@ describe("loadOrders", () => {
     expect(list.children[0].textContent).toContain("Commande #42 — 1500 XPF (pending)");
   });
 
-  test("appel réseau par défaut cible /orders?active=true sans status", async () => {
+  test("appel réseau par défaut (Tous) n'envoie pas active et n'envoie pas status — SHIAAAAAAAAAAAAAAAAAAAAAAAA-358", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
     await loadOrders();
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/orders?active=true")
-    );
     const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.has("active")).toBe(false);
     expect(url.searchParams.has("status")).toBe(false);
   });
 
-  test("appel réseau avec status envoie active=true ET status — CLA-95", async () => {
+  test("appel réseau avec status envoie status sans active — CLA-95", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
@@ -87,7 +85,7 @@ describe("loadOrders", () => {
     await loadOrders("paid");
 
     const url = new URL(global.fetch.mock.calls[0][0]);
-    expect(url.searchParams.get("active")).toBe("true");
+    expect(url.searchParams.has("active")).toBe(false);
     expect(url.searchParams.get("status")).toBe("paid");
   });
 
@@ -154,7 +152,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
 
     const url = new URL(global.fetch.mock.calls[0][0]);
     expect(url.searchParams.get("customerName")).toBe("Dupont");
-    expect(url.searchParams.get("active")).toBe("true");
+    expect(url.searchParams.has("active")).toBe(false);
   });
 
   test("customerName vide → pas de paramètre customerName dans la requête", async () => {
@@ -200,7 +198,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
     await loadOrders("paid", "date_desc", "2024-01-01", "2024-12-31", "Jean");
 
     const url = new URL(global.fetch.mock.calls[0][0]);
-    expect(url.searchParams.get("active")).toBe("true");
+    expect(url.searchParams.has("active")).toBe(false);
     expect(url.searchParams.get("status")).toBe("paid");
     expect(url.searchParams.get("sort")).toBe("date_desc");
     expect(url.searchParams.get("from")).toBe("2024-01-01");
@@ -271,7 +269,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
     const url = new URL(global.fetch.mock.calls[0][0]);
     expect(url.searchParams.get("sort")).toBe("date_asc");
-    expect(url.searchParams.get("active")).toBe("true");
+    expect(url.searchParams.has("active")).toBe(false);
   });
 
   test("sort=date_desc ajoute ?sort=date_desc à la requête", async () => {
@@ -305,7 +303,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
     await loadOrders("paid", "date_desc", "2024-02-01", "2024-03-31");
 
     const url = new URL(global.fetch.mock.calls[0][0]);
-    expect(url.searchParams.get("active")).toBe("true");
+    expect(url.searchParams.has("active")).toBe(false);
     expect(url.searchParams.get("status")).toBe("paid");
     expect(url.searchParams.get("sort")).toBe("date_desc");
     expect(url.searchParams.get("from")).toBe("2024-02-01");
@@ -333,7 +331,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
     const url = new URL(global.fetch.mock.calls[0][0]);
     expect(url.searchParams.get("sort")).toBe("amount_asc");
-    expect(url.searchParams.get("active")).toBe("true");
+    expect(url.searchParams.has("active")).toBe(false);
   });
 
   test("sort=amount_desc ajoute ?sort=amount_desc à la requête", async () => {
@@ -345,7 +343,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
     const url = new URL(global.fetch.mock.calls[0][0]);
     expect(url.searchParams.get("sort")).toBe("amount_desc");
-    expect(url.searchParams.get("active")).toBe("true");
+    expect(url.searchParams.has("active")).toBe(false);
   });
 
   test("sans sort → pas de param sort dans la requête", async () => {

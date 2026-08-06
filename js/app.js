@@ -31,7 +31,6 @@ async function loadOrderHistory(orderId) {
 
 async function loadOrders(status, sort, from, to, customerName, page = 1) {
   const url = new URL(`${API_BASE_URL}/orders`);
-  url.searchParams.set("active", "true");
   if (status) url.searchParams.set("status", status);
   if (sort) url.searchParams.set("sort", sort);
   if (from) url.searchParams.set("from", from);
