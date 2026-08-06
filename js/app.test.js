@@ -1,11 +1,11 @@
 /**
- * Tests d'acceptation — CLA-121, CLA-95, CLA-195, CLA-227, SHIAAAAAAAAAAAAAAAAAAAAAAAA-250
+ * Tests d'acceptation — CLA-121, CLA-95, CLA-195, CLA-227, SHIAAAAAAAAAAAAAAAAAAAAAAAA-250, SHIAAAAAAAAAAAAAAAAAAAAAAAA-343
  * État vide : afficher "Aucune commande" quand la liste est vide
  */
 
 const fs = require("fs");
 const path = require("path");
-const { loadOrders } = require("./app.js");
+const { loadOrders, loadOrderHistory } = require("./app.js");
 
 const paginatedResponse = (orders, page = 1, totalPages = 1) => ({
   orders,
@@ -47,8 +47,8 @@ describe("loadOrders", () => {
 
     const list = document.getElementById("orders-list");
     expect(list.children.length).toBe(2);
-    expect(list.children[0].textContent).toBe("Commande #1 — 25 XPF (pending)");
-    expect(list.children[1].textContent).toBe("Commande #2 — 50 XPF (ready)");
+    expect(list.children[0].textContent).toContain("Commande #1 — 25 XPF (pending)");
+    expect(list.children[1].textContent).toContain("Commande #2 — 50 XPF (ready)");
     expect(list.textContent).not.toContain("Aucune commande");
   });
 
@@ -62,7 +62,7 @@ describe("loadOrders", () => {
     await loadOrders();
 
     const list = document.getElementById("orders-list");
-    expect(list.children[0].textContent).toBe("Commande #42 — 1500 XPF (pending)");
+    expect(list.children[0].textContent).toContain("Commande #42 — 1500 XPF (pending)");
   });
 
   test("appel réseau par défaut cible /orders?active=true sans status", async () => {
@@ -120,7 +120,7 @@ describe("loadOrders — CLA-262 affichage devise", () => {
     await loadOrders();
 
     const list = document.getElementById("orders-list");
-    expect(list.children[0].textContent).toBe("Commande #1 — 42 EUR (paid)");
+    expect(list.children[0].textContent).toContain("Commande #1 — 42 EUR (paid)");
   });
 
   test("affiche XPF quand currency vaut XPF — CLA-262", async () => {
@@ -132,7 +132,7 @@ describe("loadOrders — CLA-262 affichage devise", () => {
     await loadOrders();
 
     const list = document.getElementById("orders-list");
-    expect(list.children[0].textContent).toBe("Commande #7 — 500 XPF (paid)");
+    expect(list.children[0].textContent).toContain("Commande #7 — 500 XPF (paid)");
   });
 });
 
@@ -259,7 +259,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
     await loadOrders();
 
     const list = document.getElementById("orders-list");
-    expect(list.children[0].textContent).toBe("Commande #1 — 100 XPF (paid)");
+    expect(list.children[0].textContent).toContain("Commande #1 — 100 XPF (paid)");
   });
 
   test("sort=date_asc ajoute ?sort=date_asc à la requête", async () => {
@@ -463,7 +463,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
     await loadOrders();
 
     const list = document.getElementById("orders-list");
-    expect(list.children[0].textContent).toBe("Commande #5 — 100 XPF (paid)");
+    expect(list.children[0].textContent).toContain("Commande #5 — 100 XPF (paid)");
   });
 
   test("bouton Précédent désactivé à la page 1", async () => {
@@ -531,5 +531,171 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
     expect(url.searchParams.get("from")).toBe("2024-01-01");
     expect(url.searchParams.get("to")).toBe("2024-12-31");
     expect(url.searchParams.get("customerName")).toBe("Jean");
+  });
+});
+
+describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-343 bouton Historique", () => {
+  const historyResponse = {
+    orderId: 7,
+    history: [
+      { status: "pending", at: "2024-01-01T10:00:00Z" },
+      { status: "paid", at: "2024-01-02T10:00:00Z" },
+    ],
+  };
+
+  beforeEach(() => {
+    document.body.innerHTML = '<ul id="orders-list"></ul>';
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test("chaque ligne de commande a un bouton Historique", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(paginatedResponse([
+        { id: 7, total: 200, status: "paid", currency: "XPF" },
+      ])),
+    });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    const btn = list.querySelector("button.btn-historique");
+    expect(btn).not.toBeNull();
+    expect(btn.textContent).toBe("Historique");
+  });
+
+  test("premier clic appelle GET /orders/:id/history et affiche les entrées status — at", async () => {
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        json: jest.fn().mockResolvedValue(paginatedResponse([
+          { id: 7, total: 200, status: "paid", currency: "XPF" },
+        ])),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(historyResponse),
+      });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    const btn = list.querySelector("button.btn-historique");
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const panel = list.querySelector("ul.order-history");
+    expect(panel.style.display).not.toBe("none");
+    expect(panel.children.length).toBe(2);
+    expect(panel.children[0].textContent).toBe("pending — 2024-01-01T10:00:00Z");
+    expect(panel.children[1].textContent).toBe("paid — 2024-01-02T10:00:00Z");
+
+    const histUrl = new URL(global.fetch.mock.calls[1][0]);
+    expect(histUrl.pathname).toBe("/orders/7/history");
+  });
+
+  test("second clic masque le panneau sans appel réseau supplémentaire", async () => {
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        json: jest.fn().mockResolvedValue(paginatedResponse([
+          { id: 7, total: 200, status: "paid", currency: "XPF" },
+        ])),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(historyResponse),
+      });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    const btn = list.querySelector("button.btn-historique");
+    const panel = list.querySelector("ul.order-history");
+
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(panel.style.display).not.toBe("none");
+
+    const callsBefore = global.fetch.mock.calls.length;
+    btn.click();
+    expect(panel.style.display).toBe("none");
+    expect(global.fetch.mock.calls.length).toBe(callsBefore);
+  });
+
+  test("troisième clic ré-affiche le panneau sans appel réseau supplémentaire", async () => {
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        json: jest.fn().mockResolvedValue(paginatedResponse([
+          { id: 7, total: 200, status: "paid", currency: "XPF" },
+        ])),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(historyResponse),
+      });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    const btn = list.querySelector("button.btn-historique");
+    const panel = list.querySelector("ul.order-history");
+
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const callsBefore = global.fetch.mock.calls.length;
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(panel.style.display).not.toBe("none");
+    expect(global.fetch.mock.calls.length).toBe(callsBefore);
+  });
+
+  test("erreur 404 → affiche « Historique indisponible »", async () => {
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        json: jest.fn().mockResolvedValue(paginatedResponse([
+          { id: 99, total: 50, status: "paid", currency: "XPF" },
+        ])),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: jest.fn().mockResolvedValue({ error: "Not found" }),
+      });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    const btn = list.querySelector("button.btn-historique");
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const panel = list.querySelector("ul.order-history");
+    expect(panel.style.display).not.toBe("none");
+    expect(panel.textContent).toBe("Historique indisponible");
+  });
+
+  test("erreur réseau → affiche « Historique indisponible »", async () => {
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        json: jest.fn().mockResolvedValue(paginatedResponse([
+          { id: 99, total: 50, status: "paid", currency: "XPF" },
+        ])),
+      })
+      .mockRejectedValueOnce(new Error("Network error"));
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    const btn = list.querySelector("button.btn-historique");
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const panel = list.querySelector("ul.order-history");
+    expect(panel.style.display).not.toBe("none");
+    expect(panel.textContent).toBe("Historique indisponible");
   });
 });
