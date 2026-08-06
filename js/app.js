@@ -17,6 +17,18 @@ function formatDate(isoString) {
   }).format(new Date(isoString));
 }
 
+async function loadOrderHistory(orderId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}/history`);
+    if (!response.ok) {
+      return { error: true };
+    }
+    return await response.json();
+  } catch (_) {
+    return { error: true };
+  }
+}
+
 async function loadOrders(status, sort, from, to, customerName, page = 1) {
   const url = new URL(`${API_BASE_URL}/orders`);
   url.searchParams.set("active", "true");
@@ -45,6 +57,43 @@ async function loadOrders(status, sort, from, to, customerName, page = 1) {
       const date = formatDate(order.createdAt);
       const datePart = date ? ` — ${date}` : "";
       item.textContent = `Commande #${order.id} — ${order.total} ${order.currency} (${order.status})${datePart}`;
+
+      const histBtn = document.createElement("button");
+      histBtn.textContent = "Historique";
+      histBtn.className = "btn-historique";
+
+      const histPanel = document.createElement("ul");
+      histPanel.className = "order-history";
+      histPanel.style.display = "none";
+
+      let historyLoaded = false;
+
+      histBtn.addEventListener("click", async () => {
+        if (histPanel.style.display !== "none") {
+          histPanel.style.display = "none";
+          return;
+        }
+        if (!historyLoaded) {
+          historyLoaded = true;
+          const result = await loadOrderHistory(order.id);
+          histPanel.innerHTML = "";
+          if (result.error) {
+            const errEl = document.createElement("li");
+            errEl.textContent = "Historique indisponible";
+            histPanel.appendChild(errEl);
+          } else {
+            for (const entry of result.history) {
+              const entryEl = document.createElement("li");
+              entryEl.textContent = `${entry.status} — ${entry.at}`;
+              histPanel.appendChild(entryEl);
+            }
+          }
+        }
+        histPanel.style.display = "";
+      });
+
+      item.appendChild(histBtn);
+      item.appendChild(histPanel);
       list.appendChild(item);
     }
   }
@@ -163,5 +212,5 @@ if (typeof document !== "undefined") {
 // Chargé à la fois comme module natif par index.html (<script type="module">, pas de "module" global)
 // et via require() par les tests Jest (CommonJS) — d'où l'export gardé plutôt qu'un mot-clé "export".
 if (typeof module !== "undefined") {
-  module.exports = { loadOrders };
+  module.exports = { loadOrders, loadOrderHistory };
 }
