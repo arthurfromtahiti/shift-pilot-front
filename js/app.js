@@ -6,6 +6,7 @@ const API_BASE_URL =
   "http://localhost:3000";
 
 const LIMIT = 20;
+let lastKnownTotalPages = 1;
 
 function formatDate(isoString) {
   if (!isoString) return null;
@@ -52,6 +53,7 @@ async function loadOrders(status, sort, from, to, customerName, page = 1) {
   const nextBtn = document.getElementById("pagination-next");
   const pageInfo = document.getElementById("pagination-info");
   if (prevBtn && nextBtn && pageInfo && pagination) {
+    lastKnownTotalPages = pagination.totalPages;
     prevBtn.disabled = pagination.page <= 1;
     nextBtn.disabled = pagination.page >= pagination.totalPages;
     pageInfo.textContent = `Page ${pagination.page} / ${pagination.totalPages}`;
@@ -137,8 +139,10 @@ if (typeof document !== "undefined") {
     });
 
     nextBtn.addEventListener("click", () => {
-      currentPage++;
-      loadOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value, customerNameInput.value, currentPage);
+      if (currentPage < lastKnownTotalPages) {
+        currentPage++;
+        loadOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value, customerNameInput.value, currentPage);
+      }
     });
 
     statusSelect.addEventListener("change", reload);

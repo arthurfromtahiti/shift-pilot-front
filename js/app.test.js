@@ -372,6 +372,49 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
   });
 });
 
+describe("nextBtn — garde locale SHIAAAAAAAAAAAAAAAAAAAAAAAA-299", () => {
+  beforeEach(async () => {
+    document.body.innerHTML = `
+      <select id="status-filter"><option value="">Tous</option></select>
+      <ul id="orders-list"></ul>
+    `;
+
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({
+        orders: [],
+        pagination: { total: 40, page: 1, limit: 20, totalPages: 2 },
+      }),
+    });
+
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test("des clics rapides sur Suivant n'envoient pas de requête avec page > totalPages", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({
+        orders: [],
+        pagination: { total: 40, page: 2, limit: 20, totalPages: 2 },
+      }),
+    });
+
+    const nextBtn = document.getElementById("pagination-next");
+    expect(nextBtn).toBeTruthy();
+
+    nextBtn.click();
+    nextBtn.click();
+    nextBtn.click();
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
   beforeEach(() => {
     document.body.innerHTML = `
