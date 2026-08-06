@@ -1,5 +1,5 @@
 /**
- * Tests d'acceptation — CLA-121, CLA-95, CLA-195, CLA-227, SHIAAAAAAAAAAAAAAAAAAAAAAAA-250, SHIAAAAAAAAAAAAAAAAAAAAAAAA-343
+ * Tests d'acceptation — CLA-121, CLA-95, CLA-195, CLA-227, SHIAAAAAAAAAAAAAAAAAAAAAAAA-250, SHIAAAAAAAAAAAAAAAAAAAAAAAA-343, SHIAAAAAAAAAAAAAAAAAAAAAAAA-374
  * État vide : afficher "Aucune commande" quand la liste est vide
  */
 
@@ -736,6 +736,141 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-343 bouton Historique", () 
     const panel = list.querySelector("ul.order-history");
     expect(panel.style.display).not.toBe("none");
     expect(panel.textContent).toBe("Historique indisponible");
+  });
+});
+
+describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-374 historyLoaded ne se sette qu'en cas de succès", () => {
+  const historyResponse = {
+    orderId: 7,
+    history: [
+      { status: "pending", at: "2024-01-01T10:00:00Z" },
+      { status: "paid", at: "2024-01-02T10:00:00Z" },
+    ],
+  };
+
+  beforeEach(() => {
+    document.body.innerHTML = '<ul id="orders-list"></ul>';
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test("après un échec HTTP, la réouverture du panneau effectue une nouvelle tentative réseau", async () => {
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(paginatedResponse([
+          { id: 7, total: 200, status: "paid", currency: "XPF" },
+        ])),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: jest.fn().mockResolvedValue({ error: "Internal Server Error" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(historyResponse),
+      });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    const btn = list.querySelector("button.btn-historique");
+    const panel = list.querySelector("ul.order-history");
+
+    // Clic 1 : erreur → panneau affiché avec message d'erreur
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(panel.textContent).toBe("Historique indisponible");
+
+    // Clic 2 : cache le panneau
+    btn.click();
+    expect(panel.style.display).toBe("none");
+
+    const callsBeforeRetry = global.fetch.mock.calls.length;
+
+    // Clic 3 : réouverture → historyLoaded est false → nouvelle tentative réseau
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(global.fetch.mock.calls.length).toBe(callsBeforeRetry + 1);
+    expect(panel.children.length).toBe(2);
+  });
+
+  test("après un échec réseau, la réouverture du panneau effectue une nouvelle tentative réseau", async () => {
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(paginatedResponse([
+          { id: 7, total: 200, status: "paid", currency: "XPF" },
+        ])),
+      })
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(historyResponse),
+      });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    const btn = list.querySelector("button.btn-historique");
+    const panel = list.querySelector("ul.order-history");
+
+    // Clic 1 : erreur réseau → panneau affiché avec message d'erreur
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(panel.textContent).toBe("Historique indisponible");
+
+    // Clic 2 : cache le panneau
+    btn.click();
+    expect(panel.style.display).toBe("none");
+
+    const callsBeforeRetry = global.fetch.mock.calls.length;
+
+    // Clic 3 : réouverture → historyLoaded est false → nouvelle tentative réseau
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(global.fetch.mock.calls.length).toBe(callsBeforeRetry + 1);
+    expect(panel.children.length).toBe(2);
+  });
+
+  test("après un succès, la réouverture du panneau ne refait pas d'appel réseau", async () => {
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(paginatedResponse([
+          { id: 7, total: 200, status: "paid", currency: "XPF" },
+        ])),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(historyResponse),
+      });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    const btn = list.querySelector("button.btn-historique");
+    const panel = list.querySelector("ul.order-history");
+
+    // Clic 1 : succès → historyLoaded passe true
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(panel.children.length).toBe(2);
+
+    const callsAfterSuccess = global.fetch.mock.calls.length;
+
+    // Clic 2 : cache le panneau
+    btn.click();
+    expect(panel.style.display).toBe("none");
+
+    // Clic 3 : réouverture → historyLoaded est true → pas d'appel réseau
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(global.fetch.mock.calls.length).toBe(callsAfterSuccess);
+    expect(panel.style.display).not.toBe("none");
   });
 });
 
