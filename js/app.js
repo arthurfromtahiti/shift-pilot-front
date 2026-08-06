@@ -141,6 +141,8 @@ if (typeof document !== "undefined") {
       ["date_desc", "Date décroissante"],
       ["amount_asc", "Montant croissant"],
       ["amount_desc", "Montant décroissant"],
+      ["client_asc", "Client A → Z"],
+      ["client_desc", "Client Z → A"],
     ]) {
       const opt = document.createElement("option");
       opt.value = value;

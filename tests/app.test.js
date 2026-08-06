@@ -87,3 +87,27 @@ test("la liste est re-rendue après chargement", async () => {
     "la liste doit afficher les commandes retournées par l'API"
   );
 });
+
+test("sort=client_asc est transmis tel quel à l'API — SHIAAAAAAAAAAAAAAAAAAAAAAAA-412", async () => {
+  fetchedUrls.length = 0;
+  await loadOrders(undefined, "client_asc");
+  assert.equal(fetchedUrls.length, 1, "une seule requête doit être effectuée");
+  const url = new URL(fetchedUrls[0]);
+  assert.equal(url.searchParams.get("sort"), "client_asc", "sort=client_asc doit être présent dans l'URL");
+});
+
+test("sort=client_desc est transmis tel quel à l'API — SHIAAAAAAAAAAAAAAAAAAAAAAAA-412", async () => {
+  fetchedUrls.length = 0;
+  await loadOrders(undefined, "client_desc");
+  assert.equal(fetchedUrls.length, 1, "une seule requête doit être effectuée");
+  const url = new URL(fetchedUrls[0]);
+  assert.equal(url.searchParams.get("sort"), "client_desc", "sort=client_desc doit être présent dans l'URL");
+});
+
+test("les options client_asc et client_desc sont présentes dans le sélecteur de tri — SHIAAAAAAAAAAAAAAAAAAAAAAAA-412", async () => {
+  const source = await fs.readFile(resolve(__dirname, "../js/app.js"), "utf8");
+  assert.ok(source.includes('"client_asc"'), 'l\'option client_asc doit être présente dans app.js');
+  assert.ok(source.includes('"client_desc"'), 'l\'option client_desc doit être présente dans app.js');
+  assert.ok(source.includes("Client A → Z"), 'le libellé "Client A → Z" doit être présent');
+  assert.ok(source.includes("Client Z → A"), 'le libellé "Client Z → A" doit être présent');
+});
