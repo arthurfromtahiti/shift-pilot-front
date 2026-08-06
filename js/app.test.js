@@ -23,6 +23,7 @@ describe("loadOrders", () => {
 
   test("liste vide → affiche « Aucune commande » dans #orders-list", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -40,6 +41,7 @@ describe("loadOrders", () => {
       { id: 2, total: 50, status: "ready", currency: "XPF" },
     ];
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
@@ -56,6 +58,7 @@ describe("loadOrders", () => {
     // Le back stocke et expose total déjà en XPF, sans champ totalXpf dérivé — CLA-195
     const orders = [{ id: 42, total: 1500, status: "pending", currency: "XPF" }];
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
@@ -67,6 +70,7 @@ describe("loadOrders", () => {
 
   test("appel réseau par défaut (Tous) n'envoie pas active et n'envoie pas status — SHIAAAAAAAAAAAAAAAAAAAAAAAA-358", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -79,6 +83,7 @@ describe("loadOrders", () => {
 
   test("appel réseau avec status envoie status sans active — CLA-95", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -112,6 +117,7 @@ describe("loadOrders — CLA-262 affichage devise", () => {
   test("affiche order.currency à côté du montant — CLA-262", async () => {
     const orders = [{ id: 1, total: 42, status: "paid", currency: "EUR" }];
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
@@ -124,6 +130,7 @@ describe("loadOrders — CLA-262 affichage devise", () => {
   test("affiche XPF quand currency vaut XPF — CLA-262", async () => {
     const orders = [{ id: 7, total: 500, status: "paid", currency: "XPF" }];
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
@@ -145,6 +152,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
 
   test("customerName envoie ?customerName=<valeur> dans la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -157,6 +165,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
 
   test("customerName vide → pas de paramètre customerName dans la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -168,6 +177,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
 
   test("customerName avec résultat vide → affiche « Aucune commande trouvée »", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -181,6 +191,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
 
   test("sans customerName et liste vide → affiche toujours « Aucune commande »", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -192,6 +203,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
 
   test("customerName se combine avec status, sort, from, to", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -211,6 +223,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-24 recherche par nom de cli
       { id: 101, userId: 2, total: 42, status: "paid", createdAt: "2024-01-10T08:00:00Z", clientName: "Jean Dupont", currency: "XPF" },
     ];
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
@@ -236,6 +249,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
   test("affiche createdAt formatté quand présent dans la commande", async () => {
     const orders = [{ id: 1, total: 100, status: "paid", currency: "XPF", createdAt: "2024-01-10T08:00:00Z" }];
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
@@ -251,6 +265,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
   test("n'affiche pas de date si createdAt absent — rétrocompatibilité", async () => {
     const orders = [{ id: 1, total: 100, status: "paid", currency: "XPF" }];
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse(orders)),
     });
 
@@ -262,6 +277,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("sort=date_asc ajoute ?sort=date_asc à la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -274,6 +290,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("sort=date_desc ajoute ?sort=date_desc à la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -285,6 +302,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("from et to ajoutent les paramètres de plage de dates", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -297,6 +315,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("tous les paramètres se combinent (status + sort + from + to)", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -312,6 +331,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("from seul sans to → seul from dans la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -324,6 +344,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("sort=amount_asc ajoute ?sort=amount_asc à la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -336,6 +357,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("sort=amount_desc ajoute ?sort=amount_desc à la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -348,6 +370,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("sans sort → pas de param sort dans la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -359,6 +382,7 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
 
   test("sans from ni to → pas de paramètres de plage dans la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([])),
     });
 
@@ -378,6 +402,7 @@ describe("nextBtn — garde locale SHIAAAAAAAAAAAAAAAAAAAAAAAA-299", () => {
     `;
 
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue({
         orders: [],
         pagination: { total: 40, page: 1, limit: 20, totalPages: 2 },
@@ -394,6 +419,7 @@ describe("nextBtn — garde locale SHIAAAAAAAAAAAAAAAAAAAAAAAA-299", () => {
 
   test("des clics rapides sur Suivant n'envoient pas de requête avec page > totalPages", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue({
         orders: [],
         pagination: { total: 40, page: 2, limit: 20, totalPages: 2 },
@@ -429,6 +455,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
 
   test("envoie page=1 et limit=20 par défaut", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
     });
 
@@ -441,6 +468,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
 
   test("envoie le numéro de page passé en paramètre", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 40, page: 2, limit: 20, totalPages: 2 } }),
     });
 
@@ -452,6 +480,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
 
   test("lit les commandes depuis response.orders", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue({
         orders: [{ id: 5, total: 100, status: "paid", currency: "XPF" }],
         pagination: { total: 1, page: 1, limit: 20, totalPages: 1 },
@@ -466,6 +495,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
 
   test("bouton Précédent désactivé à la page 1", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 40, page: 1, limit: 20, totalPages: 2 } }),
     });
 
@@ -476,6 +506,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
 
   test("bouton Suivant désactivé à la dernière page", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 40, page: 2, limit: 20, totalPages: 2 } }),
     });
 
@@ -486,6 +517,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
 
   test("bouton Précédent activé quand page > 1", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 40, page: 2, limit: 20, totalPages: 2 } }),
     });
 
@@ -496,6 +528,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
 
   test("bouton Suivant activé quand page < totalPages", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 40, page: 1, limit: 20, totalPages: 2 } }),
     });
 
@@ -506,6 +539,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
 
   test("info de pagination affiche la page courante et le total", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 40, page: 2, limit: 20, totalPages: 2 } }),
     });
 
@@ -516,6 +550,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-250 pagination", () => {
 
   test("les filtres existants sont transmis avec les paramètres de pagination", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 0, page: 2, limit: 20, totalPages: 0 } }),
     });
 
@@ -551,6 +586,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-343 bouton Historique", () 
 
   test("chaque ligne de commande a un bouton Historique", async () => {
     global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
       json: jest.fn().mockResolvedValue(paginatedResponse([
         { id: 7, total: 200, status: "paid", currency: "XPF" },
       ])),
@@ -567,6 +603,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-343 bouton Historique", () 
   test("premier clic appelle GET /orders/:id/history et affiche les entrées status — at", async () => {
     global.fetch = jest.fn()
       .mockResolvedValueOnce({
+        ok: true,
         json: jest.fn().mockResolvedValue(paginatedResponse([
           { id: 7, total: 200, status: "paid", currency: "XPF" },
         ])),
@@ -596,6 +633,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-343 bouton Historique", () 
   test("second clic masque le panneau sans appel réseau supplémentaire", async () => {
     global.fetch = jest.fn()
       .mockResolvedValueOnce({
+        ok: true,
         json: jest.fn().mockResolvedValue(paginatedResponse([
           { id: 7, total: 200, status: "paid", currency: "XPF" },
         ])),
@@ -624,6 +662,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-343 bouton Historique", () 
   test("troisième clic ré-affiche le panneau sans appel réseau supplémentaire", async () => {
     global.fetch = jest.fn()
       .mockResolvedValueOnce({
+        ok: true,
         json: jest.fn().mockResolvedValue(paginatedResponse([
           { id: 7, total: 200, status: "paid", currency: "XPF" },
         ])),
@@ -654,6 +693,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-343 bouton Historique", () 
   test("erreur 404 → affiche « Historique indisponible »", async () => {
     global.fetch = jest.fn()
       .mockResolvedValueOnce({
+        ok: true,
         json: jest.fn().mockResolvedValue(paginatedResponse([
           { id: 99, total: 50, status: "paid", currency: "XPF" },
         ])),
@@ -679,6 +719,7 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-343 bouton Historique", () 
   test("erreur réseau → affiche « Historique indisponible »", async () => {
     global.fetch = jest.fn()
       .mockResolvedValueOnce({
+        ok: true,
         json: jest.fn().mockResolvedValue(paginatedResponse([
           { id: 99, total: 50, status: "paid", currency: "XPF" },
         ])),
@@ -695,5 +736,38 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-343 bouton Historique", () 
     const panel = list.querySelector("ul.order-history");
     expect(panel.style.display).not.toBe("none");
     expect(panel.textContent).toBe("Historique indisponible");
+  });
+});
+
+describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-367 gestion des erreurs réseau", () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<ul id="orders-list"></ul>';
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test("erreur réseau (fetch reject) → affiche « Erreur lors du chargement des commandes »", async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    expect(list.children.length).toBe(1);
+    expect(list.children[0].textContent).toBe("Erreur lors du chargement des commandes");
+  });
+
+  test("réponse HTTP non-OK (500) → affiche « Erreur lors du chargement des commandes »", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+    });
+
+    await loadOrders();
+
+    const list = document.getElementById("orders-list");
+    expect(list.children.length).toBe(1);
+    expect(list.children[0].textContent).toBe("Erreur lors du chargement des commandes");
   });
 });

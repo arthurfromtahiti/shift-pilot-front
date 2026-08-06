@@ -39,13 +39,29 @@ async function loadOrders(status, sort, from, to, customerName, page = 1) {
   url.searchParams.set("page", String(page));
   url.searchParams.set("limit", String(LIMIT));
 
-  const response = await fetch(url.toString());
-  const data = await response.json();
+  const list = document.getElementById("orders-list");
+  list.innerHTML = "";
+
+  let data;
+  try {
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      const errEl = document.createElement("li");
+      errEl.textContent = "Erreur lors du chargement des commandes";
+      list.appendChild(errEl);
+      return;
+    }
+    data = await response.json();
+  } catch (_) {
+    const errEl = document.createElement("li");
+    errEl.textContent = "Erreur lors du chargement des commandes";
+    list.appendChild(errEl);
+    return;
+  }
+
   const orders = data.orders;
   const pagination = data.pagination;
 
-  const list = document.getElementById("orders-list");
-  list.innerHTML = "";
   if (orders.length === 0) {
     const empty = document.createElement("li");
     empty.textContent = customerName ? "Aucune commande trouvée" : "Aucune commande";
