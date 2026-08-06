@@ -21,6 +21,7 @@ global.window = { API_BASE_URL: "http://test.local" };
 global.fetch = async (url) => {
   fetchedUrls.push(url.toString());
   return {
+    ok: true,
     json: async () => ({
       orders: [
         { id: 1, total: 1000, status: "paid" },
