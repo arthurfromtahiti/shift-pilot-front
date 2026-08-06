@@ -30,10 +30,20 @@ global.fetch = async (url) => {
     }),
   };
 };
+const createEl = () => ({
+  textContent: "",
+  style: {},
+  className: "",
+  innerHTML: "",
+  dataset: {},
+  appendChild() {},
+  addEventListener() {},
+});
+
 global.document = {
   addEventListener: () => {},
   getElementById: (id) => (id === "orders-list" ? mockListEl : null),
-  createElement: () => ({ textContent: "" }),
+  createElement: createEl,
 };
 
 const { loadOrders } = await import("../js/app.js");
