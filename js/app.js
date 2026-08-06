@@ -89,7 +89,6 @@ async function loadOrders(status, sort, from, to, customerName, page = 1) {
           return;
         }
         if (!historyLoaded) {
-          historyLoaded = true;
           const result = await loadOrderHistory(order.id);
           histPanel.innerHTML = "";
           if (result.error) {
@@ -97,6 +96,7 @@ async function loadOrders(status, sort, from, to, customerName, page = 1) {
             errEl.textContent = "Historique indisponible";
             histPanel.appendChild(errEl);
           } else {
+            historyLoaded = true;
             for (const entry of result.history) {
               const entryEl = document.createElement("li");
               entryEl.textContent = `${entry.status} — ${entry.at}`;
