@@ -143,6 +143,8 @@ if (typeof document !== "undefined") {
       ["amount_desc", "Montant décroissant"],
       ["client_asc", "Client A → Z"],
       ["client_desc", "Client Z → A"],
+      ["status_asc", "Statut A → Z"],
+      ["status_desc", "Statut Z → A"],
     ]) {
       const opt = document.createElement("option");
       opt.value = value;

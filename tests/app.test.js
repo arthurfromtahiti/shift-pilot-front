@@ -111,3 +111,27 @@ test("les options client_asc et client_desc sont présentes dans le sélecteur d
   assert.ok(source.includes("Client A → Z"), 'le libellé "Client A → Z" doit être présent');
   assert.ok(source.includes("Client Z → A"), 'le libellé "Client Z → A" doit être présent');
 });
+
+test("sort=status_asc est transmis tel quel à l'API — SHIAAAAAAAAAAAAAAAAAAAAAAAA-437", async () => {
+  fetchedUrls.length = 0;
+  await loadOrders(undefined, "status_asc");
+  assert.equal(fetchedUrls.length, 1, "une seule requête doit être effectuée");
+  const url = new URL(fetchedUrls[0]);
+  assert.equal(url.searchParams.get("sort"), "status_asc", "sort=status_asc doit être présent dans l'URL");
+});
+
+test("sort=status_desc est transmis tel quel à l'API — SHIAAAAAAAAAAAAAAAAAAAAAAAA-437", async () => {
+  fetchedUrls.length = 0;
+  await loadOrders(undefined, "status_desc");
+  assert.equal(fetchedUrls.length, 1, "une seule requête doit être effectuée");
+  const url = new URL(fetchedUrls[0]);
+  assert.equal(url.searchParams.get("sort"), "status_desc", "sort=status_desc doit être présent dans l'URL");
+});
+
+test("les options status_asc et status_desc sont présentes dans le sélecteur de tri — SHIAAAAAAAAAAAAAAAAAAAAAAAA-437", async () => {
+  const source = await fs.readFile(resolve(__dirname, "../js/app.js"), "utf8");
+  assert.ok(source.includes('"status_asc"'), 'l\'option status_asc doit être présente dans app.js');
+  assert.ok(source.includes('"status_desc"'), 'l\'option status_desc doit être présente dans app.js');
+  assert.ok(source.includes("Statut A → Z"), 'le libellé "Statut A → Z" doit être présent');
+  assert.ok(source.includes("Statut Z → A"), 'le libellé "Statut Z → A" doit être présent');
+});
