@@ -145,6 +145,8 @@ if (typeof document !== "undefined") {
       ["client_desc", "Client Z → A"],
       ["status_asc", "Statut A → Z"],
       ["status_desc", "Statut Z → A"],
+      ["id_asc", "ID croissant"],
+      ["id_desc", "ID décroissant"],
     ]) {
       const opt = document.createElement("option");
       opt.value = value;
