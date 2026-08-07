@@ -368,6 +368,32 @@ describe("loadOrders — CLA-227 affichage date et tri/filtre", () => {
     expect(url.searchParams.has("active")).toBe(false);
   });
 
+  test("sort=total_asc ajoute ?sort=total_asc à la requête — SHIAAAAAAAAAAAAAAAAAAAAAAAA-463", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
+    });
+
+    await loadOrders(undefined, "total_asc");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("sort")).toBe("total_asc");
+    expect(url.searchParams.has("active")).toBe(false);
+  });
+
+  test("sort=total_desc ajoute ?sort=total_desc à la requête — SHIAAAAAAAAAAAAAAAAAAAAAAAA-463", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(paginatedResponse([])),
+    });
+
+    await loadOrders(undefined, "total_desc");
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.searchParams.get("sort")).toBe("total_desc");
+    expect(url.searchParams.has("active")).toBe(false);
+  });
+
   test("sans sort → pas de param sort dans la requête", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
