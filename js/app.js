@@ -153,7 +153,13 @@ async function exportOrders(status, sort, from, to, customerName) {
     msgEl.textContent = `${totalCount} commandes exportées`;
   }
 
-  const blob = await response.blob();
+  let blob;
+  try {
+    blob = await response.blob();
+  } catch (_) {
+    if (msgEl) msgEl.textContent = "Erreur lors de l'export";
+    return;
+  }
   const objectUrl = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = objectUrl;
