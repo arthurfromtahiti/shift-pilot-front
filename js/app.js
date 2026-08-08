@@ -124,6 +124,50 @@ async function loadOrders(status, sort, from, to, customerName, page = 1) {
   }
 }
 
+async function exportOrders(status, sort, from, to, customerName) {
+  const url = new URL(`${API_BASE_URL}/orders/export.csv`);
+  if (status) url.searchParams.set("status", status);
+  if (sort) url.searchParams.set("sort", sort);
+  if (from) url.searchParams.set("from", from);
+  if (to) url.searchParams.set("to", to);
+  if (customerName) url.searchParams.set("customerName", customerName);
+
+  const msgEl = document.getElementById("export-csv-message");
+  if (msgEl) msgEl.textContent = "";
+
+  let response;
+  try {
+    response = await fetch(url.toString());
+  } catch (_) {
+    if (msgEl) msgEl.textContent = "Erreur lors de l'export";
+    return;
+  }
+
+  if (!response.ok) {
+    if (msgEl) msgEl.textContent = "Erreur lors de l'export";
+    return;
+  }
+
+  const totalCount = response.headers.get("X-Total-Count");
+  if (msgEl && totalCount !== null) {
+    msgEl.textContent = `${totalCount} commandes exportées`;
+  }
+
+  let blob;
+  try {
+    blob = await response.blob();
+  } catch (_) {
+    if (msgEl) msgEl.textContent = "Erreur lors de l'export";
+    return;
+  }
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = "commandes.csv";
+  a.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded", () => {
     const statusSelect = document.getElementById("status-filter");
@@ -226,6 +270,18 @@ if (typeof document !== "undefined") {
       debounceTimer = setTimeout(reload, 300);
     });
 
+    const exportBtn = document.getElementById("export-csv-btn");
+    if (exportBtn) {
+      exportBtn.addEventListener("click", async () => {
+        exportBtn.disabled = true;
+        try {
+          await exportOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value, customerNameInput.value);
+        } finally {
+          exportBtn.disabled = false;
+        }
+      });
+    }
+
     loadOrders(undefined, undefined, undefined, undefined, undefined, currentPage);
   });
 }
@@ -233,5 +289,5 @@ if (typeof document !== "undefined") {
 // Chargé à la fois comme module natif par index.html (<script type="module">, pas de "module" global)
 // et via require() par les tests Jest (CommonJS) — d'où l'export gardé plutôt qu'un mot-clé "export".
 if (typeof module !== "undefined") {
-  module.exports = { loadOrders, loadOrderHistory };
+  module.exports = { loadOrders, loadOrderHistory, exportOrders };
 }

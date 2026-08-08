@@ -17,11 +17,14 @@ const mockListEl = {
   },
 };
 
+const mockExportMsgEl = { textContent: "" };
+
 global.window = { API_BASE_URL: "http://test.local" };
 global.fetch = async (url) => {
   fetchedUrls.push(url.toString());
   return {
     ok: true,
+    headers: { get: (name) => (name === "X-Total-Count" ? "42" : null) },
     json: async () => ({
       orders: [
         { id: 1, total: 1000, status: "paid" },
@@ -29,6 +32,7 @@ global.fetch = async (url) => {
       ],
       pagination: { total: 2, page: 1, limit: 20, totalPages: 1 },
     }),
+    blob: async () => ({}),
   };
 };
 const createEl = () => ({
@@ -37,17 +41,27 @@ const createEl = () => ({
   className: "",
   innerHTML: "",
   dataset: {},
+  href: "",
+  download: "",
+  click: () => {},
   appendChild() {},
   addEventListener() {},
 });
 
 global.document = {
   addEventListener: () => {},
-  getElementById: (id) => (id === "orders-list" ? mockListEl : null),
+  getElementById: (id) => {
+    if (id === "orders-list") return mockListEl;
+    if (id === "export-csv-message") return mockExportMsgEl;
+    return null;
+  },
   createElement: createEl,
 };
 
-const { loadOrders } = await import("../js/app.js");
+URL.createObjectURL = () => "blob:mock";
+URL.revokeObjectURL = () => {};
+
+const { loadOrders, exportOrders } = await import("../js/app.js");
 
 test("le sélecteur est présent dans index.html avec les statuts du contrat back", async () => {
   const html = await fs.readFile(resolve(__dirname, "../index.html"), "utf8");
@@ -158,4 +172,32 @@ test("les options id_asc et id_desc sont présentes dans le sélecteur de tri �
   assert.ok(source.includes('"id_desc"'), 'l\'option id_desc doit être présente dans app.js');
   assert.ok(source.includes("ID croissant"), 'le libellé "ID croissant" doit être présent');
   assert.ok(source.includes("ID décroissant"), 'le libellé "ID décroissant" doit être présent');
+});
+
+test("le bouton Exporter en CSV est présent dans index.html — SHIAAAAAAAAAAAAAAAAAAAAAAAA-487", async () => {
+  const html = await fs.readFile(resolve(__dirname, "../index.html"), "utf8");
+  assert.ok(html.includes('id="export-csv-btn"'), 'le bouton #export-csv-btn doit être présent dans index.html');
+});
+
+test("exportOrders appelle /orders/export.csv avec les filtres actifs — SHIAAAAAAAAAAAAAAAAAAAAAAAA-487", async () => {
+  fetchedUrls.length = 0;
+  await exportOrders("paid", "date_desc", "2024-01-01", "2024-12-31", "Dupont");
+  assert.equal(fetchedUrls.length, 1, "une seule requête doit être effectuée");
+  const url = new URL(fetchedUrls[0]);
+  assert.ok(url.pathname.endsWith("/orders/export.csv"), "l'URL doit pointer vers /orders/export.csv");
+  assert.equal(url.searchParams.get("status"), "paid", "status=paid doit être présent");
+  assert.equal(url.searchParams.get("sort"), "date_desc", "sort=date_desc doit être présent");
+  assert.equal(url.searchParams.get("from"), "2024-01-01", "from doit être présent");
+  assert.equal(url.searchParams.get("to"), "2024-12-31", "to doit être présent");
+  assert.equal(url.searchParams.get("customerName"), "Dupont", "customerName doit être présent");
+});
+
+test("exportOrders lit X-Total-Count et affiche le nombre de commandes exportées — SHIAAAAAAAAAAAAAAAAAAAAAAAA-487", async () => {
+  mockExportMsgEl.textContent = "";
+  fetchedUrls.length = 0;
+  await exportOrders();
+  assert.ok(
+    mockExportMsgEl.textContent.includes("42"),
+    "le message doit afficher le nombre de commandes exportées (X-Total-Count=42)"
+  );
 });

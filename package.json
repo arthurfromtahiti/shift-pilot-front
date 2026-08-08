@@ -14,7 +14,7 @@
   },
   "jest": {
     "testEnvironment": "jsdom",
-    "testPathIgnorePatterns": ["/node_modules/", "/.paperclip/"],
+    "testPathIgnorePatterns": ["/node_modules/"],
     "roots": ["<rootDir>/js/"]
   }
 }

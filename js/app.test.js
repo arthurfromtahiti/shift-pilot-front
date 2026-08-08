@@ -5,7 +5,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { loadOrders, loadOrderHistory } = require("./app.js");
+const { loadOrders, loadOrderHistory, exportOrders } = require("./app.js");
 
 const paginatedResponse = (orders, page = 1, totalPages = 1) => ({
   orders,
@@ -953,5 +953,246 @@ describe("loadOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-387 garde sur data.orders a
     const list = document.getElementById("orders-list");
     expect(list.children.length).toBe(1);
     expect(list.children[0].textContent).toBe("Aucune commande");
+  });
+});
+
+describe("exportOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-487", () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <button id="export-csv-btn">Exporter en CSV</button>
+      <span id="export-csv-message"></span>
+      <ul id="orders-list"></ul>
+    `;
+    global.URL.createObjectURL = jest.fn().mockReturnValue("blob:mock");
+    global.URL.revokeObjectURL = jest.fn();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    delete global.URL.createObjectURL;
+    delete global.URL.revokeObjectURL;
+  });
+
+  test("#export-csv-btn et #export-csv-message sont présents dans index.html", () => {
+    const html = fs.readFileSync(path.resolve(__dirname, "../index.html"), "utf8");
+    expect(html).toContain('id="export-csv-btn"');
+    expect(html).toContain('id="export-csv-message"');
+  });
+
+  test("appelle /orders/export.csv avec les filtres actifs", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: (name) => (name === "X-Total-Count" ? "5" : null) },
+      blob: jest.fn().mockResolvedValue(new Blob(["csv"])),
+    });
+
+    await exportOrders("paid", "date_desc", "2024-01-01", "2024-12-31", "Dupont");
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.pathname).toContain("/orders/export.csv");
+    expect(url.searchParams.get("status")).toBe("paid");
+    expect(url.searchParams.get("sort")).toBe("date_desc");
+    expect(url.searchParams.get("from")).toBe("2024-01-01");
+    expect(url.searchParams.get("to")).toBe("2024-12-31");
+    expect(url.searchParams.get("customerName")).toBe("Dupont");
+  });
+
+  test("sans filtres, aucun paramètre de filtre n'est envoyé", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => null },
+      blob: jest.fn().mockResolvedValue(new Blob()),
+    });
+
+    await exportOrders();
+
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.pathname).toContain("/orders/export.csv");
+    expect(url.searchParams.has("status")).toBe(false);
+    expect(url.searchParams.has("sort")).toBe(false);
+    expect(url.searchParams.has("from")).toBe(false);
+    expect(url.searchParams.has("to")).toBe(false);
+    expect(url.searchParams.has("customerName")).toBe(false);
+  });
+
+  test("lit X-Total-Count et affiche 'N commandes exportées' dans #export-csv-message", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: (name) => (name === "X-Total-Count" ? "42" : null) },
+      blob: jest.fn().mockResolvedValue(new Blob(["csv"])),
+    });
+
+    await exportOrders();
+
+    expect(document.getElementById("export-csv-message").textContent).toBe("42 commandes exportées");
+  });
+
+  test("déclenche le téléchargement : href, download et click() sont corrects sur l'ancre", async () => {
+    const fakeBlob = new Blob(["id,total\n1,100"]);
+    let capturedAnchor = null;
+    const origCreateElement = document.createElement.bind(document);
+    jest.spyOn(document, "createElement").mockImplementation((tag) => {
+      const el = origCreateElement(tag);
+      if (tag === "a") {
+        capturedAnchor = el;
+        jest.spyOn(el, "click");
+      }
+      return el;
+    });
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => null },
+      blob: jest.fn().mockResolvedValue(fakeBlob),
+    });
+
+    await exportOrders();
+
+    expect(global.URL.createObjectURL).toHaveBeenCalledWith(fakeBlob);
+    expect(capturedAnchor).not.toBeNull();
+    expect(capturedAnchor.getAttribute("href")).toBe("blob:mock");
+    expect(capturedAnchor.download).toBeTruthy();
+    expect(capturedAnchor.click).toHaveBeenCalledTimes(1);
+    expect(global.URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock");
+  });
+
+  test("erreur réseau → affiche 'Erreur lors de l'export' dans #export-csv-message", async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+
+    await exportOrders();
+
+    expect(document.getElementById("export-csv-message").textContent).toBe("Erreur lors de l'export");
+  });
+
+  test("réponse HTTP non-OK → affiche 'Erreur lors de l'export' dans #export-csv-message", async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 });
+
+    await exportOrders();
+
+    expect(document.getElementById("export-csv-message").textContent).toBe("Erreur lors de l'export");
+  });
+
+  test("erreur sur response.blob() → affiche 'Erreur lors de l'export' dans #export-csv-message", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => null },
+      blob: jest.fn().mockRejectedValue(new Error("Blob error")),
+    });
+
+    await exportOrders();
+
+    expect(document.getElementById("export-csv-message").textContent).toBe("Erreur lors de l'export");
+  });
+
+  test("clic sur #export-csv-btn appelle /orders/export.csv", async () => {
+    document.body.innerHTML = `
+      <select id="status-filter"><option value="">Tous</option></select>
+      <button id="export-csv-btn">Exporter en CSV</button>
+      <span id="export-csv-message"></span>
+      <ul id="orders-list"></ul>
+    `;
+
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(paginatedResponse([])),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: { get: (name) => (name === "X-Total-Count" ? "3" : null) },
+        blob: jest.fn().mockResolvedValue(new Blob()),
+      });
+
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    document.getElementById("export-csv-btn").click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    const exportUrl = new URL(global.fetch.mock.calls[1][0]);
+    expect(exportUrl.pathname).toContain("/orders/export.csv");
+  });
+
+  test("clic sur #export-csv-btn transmet les cinq filtres actifs à /orders/export.csv", async () => {
+    document.body.innerHTML = `
+      <select id="status-filter">
+        <option value="">Tous</option>
+        <option value="paid">Payée</option>
+      </select>
+      <button id="export-csv-btn">Exporter en CSV</button>
+      <span id="export-csv-message"></span>
+      <ul id="orders-list"></ul>
+    `;
+
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(paginatedResponse([])),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: { get: (name) => (name === "X-Total-Count" ? "7" : null) },
+        blob: jest.fn().mockResolvedValue(new Blob()),
+      });
+
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    document.getElementById("status-filter").value = "paid";
+    document.getElementById("sort-filter").value = "date_desc";
+    document.getElementById("from-filter").value = "2024-01-01";
+    document.getElementById("to-filter").value = "2024-12-31";
+    document.getElementById("customer-name-filter").value = "Dupont";
+
+    document.getElementById("export-csv-btn").click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    const exportUrl = new URL(global.fetch.mock.calls[1][0]);
+    expect(exportUrl.pathname).toContain("/orders/export.csv");
+    expect(exportUrl.searchParams.get("status")).toBe("paid");
+    expect(exportUrl.searchParams.get("sort")).toBe("date_desc");
+    expect(exportUrl.searchParams.get("from")).toBe("2024-01-01");
+    expect(exportUrl.searchParams.get("to")).toBe("2024-12-31");
+    expect(exportUrl.searchParams.get("customerName")).toBe("Dupont");
+  });
+
+  test("clic sur #export-csv-btn désactive le bouton pendant l'export et le réactive ensuite", async () => {
+    document.body.innerHTML = `
+      <select id="status-filter"><option value="">Tous</option></select>
+      <button id="export-csv-btn">Exporter en CSV</button>
+      <span id="export-csv-message"></span>
+      <ul id="orders-list"></ul>
+    `;
+
+    let resolveExport;
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(paginatedResponse([])),
+      })
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveExport = () =>
+            resolve({
+              ok: true,
+              headers: { get: () => "0" },
+              blob: jest.fn().mockResolvedValue(new Blob()),
+            });
+        })
+      );
+
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const btn = document.getElementById("export-csv-btn");
+    btn.click();
+    expect(btn.disabled).toBe(true);
+
+    resolveExport();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(btn.disabled).toBe(false);
   });
 });
