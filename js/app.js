@@ -132,17 +132,23 @@ async function exportOrders(status, sort, from, to, customerName) {
   if (to) url.searchParams.set("to", to);
   if (customerName) url.searchParams.set("customerName", customerName);
 
+  const msgEl = document.getElementById("export-csv-message");
+  if (msgEl) msgEl.textContent = "";
+
   let response;
   try {
     response = await fetch(url.toString());
   } catch (_) {
+    if (msgEl) msgEl.textContent = "Erreur lors de l'export";
     return;
   }
 
-  if (!response.ok) return;
+  if (!response.ok) {
+    if (msgEl) msgEl.textContent = "Erreur lors de l'export";
+    return;
+  }
 
   const totalCount = response.headers.get("X-Total-Count");
-  const msgEl = document.getElementById("export-csv-message");
   if (msgEl && totalCount !== null) {
     msgEl.textContent = `${totalCount} commandes exportées`;
   }
@@ -260,8 +266,13 @@ if (typeof document !== "undefined") {
 
     const exportBtn = document.getElementById("export-csv-btn");
     if (exportBtn) {
-      exportBtn.addEventListener("click", () => {
-        exportOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value, customerNameInput.value);
+      exportBtn.addEventListener("click", async () => {
+        exportBtn.disabled = true;
+        try {
+          await exportOrders(statusSelect.value, sortSelect.value, fromInput.value, toInput.value, customerNameInput.value);
+        } finally {
+          exportBtn.disabled = false;
+        }
       });
     }
 
