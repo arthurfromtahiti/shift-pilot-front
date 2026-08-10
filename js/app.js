@@ -29,6 +29,29 @@ async function loadOrderHistory(orderId) {
   }
 }
 
+async function searchOrderById(id) {
+  if (!id) return;
+  const resultEl = document.getElementById("order-id-result");
+  if (!resultEl) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/${id}`);
+    if (response.status === 404) {
+      resultEl.textContent = `Aucune commande trouvée pour le numéro ${id}`;
+      return;
+    }
+    if (!response.ok) {
+      resultEl.textContent = "Erreur lors de la recherche de la commande";
+      return;
+    }
+    const order = await response.json();
+    const clientPart = order.clientName ? ` — ${order.clientName}` : "";
+    resultEl.textContent = `Commande #${order.id} — ${order.total} ${order.currency} (${order.status})${clientPart}`;
+  } catch (_) {
+    resultEl.textContent = "Erreur lors de la recherche de la commande";
+  }
+}
+
 async function loadOrders(status, sort, from, to, customerName, page = 1) {
   const url = new URL(`${API_BASE_URL}/orders`);
   if (status) url.searchParams.set("status", status);
@@ -173,6 +196,20 @@ if (typeof document !== "undefined") {
     const statusSelect = document.getElementById("status-filter");
     let currentPage = 1;
 
+    const orderIdInput = document.getElementById("order-id-search");
+    const orderIdBtn = document.getElementById("order-id-search-btn");
+    if (orderIdInput && orderIdBtn) {
+      const doSearch = () => {
+        const val = orderIdInput.value.trim();
+        if (!val) return;
+        searchOrderById(val);
+      };
+      orderIdBtn.addEventListener("click", doSearch);
+      orderIdInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") doSearch();
+      });
+    }
+
     const sortLabel = document.createElement("label");
     sortLabel.htmlFor = "sort-filter";
     sortLabel.textContent = "Tri : ";
@@ -289,5 +326,5 @@ if (typeof document !== "undefined") {
 // Chargé à la fois comme module natif par index.html (<script type="module">, pas de "module" global)
 // et via require() par les tests Jest (CommonJS) — d'où l'export gardé plutôt qu'un mot-clé "export".
 if (typeof module !== "undefined") {
-  module.exports = { loadOrders, loadOrderHistory, exportOrders };
+  module.exports = { loadOrders, loadOrderHistory, exportOrders, searchOrderById };
 }
