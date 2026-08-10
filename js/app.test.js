@@ -1209,9 +1209,10 @@ describe("exportOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-487", () => {
 //   Signature : async function searchOrderById(id)
 //     - id vide / falsy → aucun appel réseau, retour immédiat
 //     - id non vide → GET ${API_BASE_URL}/orders/${id}
-//       - 200 → affiche total, status, clientName dans #order-id-result
+//       - 200 → affiche "Commande #id — total currency (status) — clientName" (clientName omis si null)
+//              clientEmail n'est pas affiché (seul clientName apparaît, per spec)
 //       - 404 → affiche "Aucune commande trouvée pour le numéro <id>"
-//       - 5xx / réseau → message d'erreur générique dans #order-id-result
+//       - 5xx / réseau → affiche "Erreur lors de la recherche de la commande"
 //     Loader : affiche "Recherche en cours…" dans #order-id-result dès le début de l'appel
 //     Câblage : #order-id-search-btn est désactivé le temps de la requête asynchrone
 //     Dans tous les cas, #orders-list reste inchangée et visible.
@@ -1278,7 +1279,8 @@ describe("searchOrderById — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 recherche par num�
     expect(result.textContent).toContain("Jean Dupont");
   });
 
-  test("S1 cas-limite : clientName null → pas d'exception, total et status affichés", async () => {
+  test("S1 cas-limite : clientName null → pas d'exception, total et status affichés, 'null' absent", async () => {
+    // clientEmail est également null ici mais n'est pas affiché (seul clientName apparaît dans la fiche, per spec)
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue({ id: 7, total: 500, status: "cancelled", clientName: null, clientEmail: null, currency: "XPF" }),
@@ -1289,6 +1291,7 @@ describe("searchOrderById — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 recherche par num�
     const result = document.getElementById("order-id-result");
     expect(result.textContent).toContain("500");
     expect(result.textContent).toContain("cancelled");
+    expect(result.textContent).not.toContain("null");
   });
 
   test("S1 : après recherche réussie, #orders-list reste accessible et non modifiée", async () => {
@@ -1347,14 +1350,13 @@ describe("searchOrderById — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 recherche par num�
 
   // ── Scénario 4 : Erreur serveur ─────────────────────────────────────────
 
-  test("S4 : réponse 5xx → message d'erreur générique (pas le message 404)", async () => {
+  test("S4 : réponse 5xx → message d'erreur générique exact", async () => {
     global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 });
 
     await searchOrderById(1);
 
     const result = document.getElementById("order-id-result");
-    expect(result.textContent).not.toBe("");
-    expect(result.textContent).not.toContain("Aucune commande trouvée");
+    expect(result.textContent).toBe("Erreur lors de la recherche de la commande");
   });
 
   test("S4 : réponse 5xx → #orders-list reste visible avec ses entrées", async () => {
@@ -1367,14 +1369,13 @@ describe("searchOrderById — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 recherche par num�
     expect(list.children.length).toBeGreaterThan(0);
   });
 
-  test("S4 : erreur réseau (fetch reject) → message d'erreur générique", async () => {
+  test("S4 : erreur réseau (fetch reject) → message d'erreur générique exact", async () => {
     global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
 
     await searchOrderById(1);
 
     const result = document.getElementById("order-id-result");
-    expect(result.textContent).not.toBe("");
-    expect(result.textContent).not.toContain("Aucune commande trouvée");
+    expect(result.textContent).toBe("Erreur lors de la recherche de la commande");
   });
 
   // ── Loader ───────────────────────────────────────────────────────────────
