@@ -199,10 +199,15 @@ if (typeof document !== "undefined") {
     const orderIdInput = document.getElementById("order-id-search");
     const orderIdBtn = document.getElementById("order-id-search-btn");
     if (orderIdInput && orderIdBtn) {
-      const doSearch = () => {
+      const doSearch = async () => {
         const val = orderIdInput.value.trim();
         if (!val) return;
-        searchOrderById(val);
+        orderIdBtn.disabled = true;
+        try {
+          await searchOrderById(val);
+        } finally {
+          orderIdBtn.disabled = false;
+        }
       };
       orderIdBtn.addEventListener("click", doSearch);
       orderIdInput.addEventListener("keydown", (e) => {
