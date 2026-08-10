@@ -1359,4 +1359,79 @@ describe("searchOrderById — SHIAAAAAAAAAAAAAAAAAAAAAAAA-614", () => {
     const listPos = html.indexOf('id="orders-list"');
     expect(searchPos).toBeLessThan(listPos);
   });
+
+  test("câblage : clic sur #order-id-search-btn déclenche l'appel API (D4)", async () => {
+    document.body.innerHTML = `
+      <select id="status-filter"><option value="">Tous</option></select>
+      <input id="order-id-search" type="number" min="1" />
+      <button id="order-id-search-btn">Rechercher</button>
+      <div id="order-id-result"></div>
+      <ul id="orders-list"></ul>
+    `;
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ data: [], total: 0, page: 1, pageSize: 20, totalPages: 1 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue({
+          id: 42,
+          total: 1500,
+          currency: "XPF",
+          status: "paid",
+          clientName: "Jean Dupont",
+        }),
+      });
+
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    document.getElementById("order-id-search").value = "42";
+    document.getElementById("order-id-search-btn").click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    const url = new URL(global.fetch.mock.calls[1][0]);
+    expect(url.pathname).toBe("/orders/42");
+  });
+
+  test("câblage : touche Entrée dans #order-id-search déclenche l'appel API (D4)", async () => {
+    document.body.innerHTML = `
+      <select id="status-filter"><option value="">Tous</option></select>
+      <input id="order-id-search" type="number" min="1" />
+      <button id="order-id-search-btn">Rechercher</button>
+      <div id="order-id-result"></div>
+      <ul id="orders-list"></ul>
+    `;
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ data: [], total: 0, page: 1, pageSize: 20, totalPages: 1 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue({
+          id: 7,
+          total: 300,
+          currency: "XPF",
+          status: "pending",
+          clientName: "Marie",
+        }),
+      });
+
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const input = document.getElementById("order-id-search");
+    input.value = "7";
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    const url = new URL(global.fetch.mock.calls[1][0]);
+    expect(url.pathname).toBe("/orders/7");
+  });
 });
