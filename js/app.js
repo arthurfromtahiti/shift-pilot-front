@@ -286,8 +286,15 @@ if (typeof document !== "undefined") {
   });
 }
 
+// Stub — à implémenter dans SHIAAAAAAAAAAAAAAAAAAAAAAAA-605.
+// Contrat : orderId vide → retour immédiat (aucun appel réseau) ; non-vide → GET /orders/:id.
+async function searchOrderById(orderId) {
+  if (!orderId && orderId !== 0) return;
+  // À compléter par le développeur feature (SHIAAAAAAAAAAAAAAAAAAAAAAAA-605)
+}
+
 // Chargé à la fois comme module natif par index.html (<script type="module">, pas de "module" global)
 // et via require() par les tests Jest (CommonJS) — d'où l'export gardé plutôt qu'un mot-clé "export".
 if (typeof module !== "undefined") {
-  module.exports = { loadOrders, loadOrderHistory, exportOrders };
+  module.exports = { loadOrders, loadOrderHistory, exportOrders, searchOrderById };
 }

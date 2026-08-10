@@ -1,3 +1,6 @@
+# Impact onboarding : NON
+# Tests d'acceptation SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 (recherche par numéro de commande).
+# Les tests searchOrderById seront ROUGES jusqu'au merge de la PR feature — c'est attendu.
 name: CI
 
 on:

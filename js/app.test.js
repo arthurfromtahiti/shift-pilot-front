@@ -1266,7 +1266,7 @@ describe("searchOrderById — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 recherche par num�
       json: jest.fn().mockResolvedValue({ id: 7, total: 500, status: "cancelled", clientName: null, clientEmail: null, currency: "XPF" }),
     });
 
-    await expect(searchOrderById(7)).resolves.not.toThrow();
+    await searchOrderById(7); // pas d'exception → test échoue ici si la fonction throw
 
     const result = document.getElementById("order-search-result");
     expect(result.textContent).toContain("500");
