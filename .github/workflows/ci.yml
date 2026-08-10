@@ -1,3 +1,7 @@
+# Impact onboarding : NON
+# Tests d'acceptation SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 — plan QA en parallèle du dev.
+# Cette PR cible la branche SHIAAAAAAAAAAAAAAAAAAAAAAAA-614 (feature front) qui fournit
+# l'implémentation de searchOrderById. La CI est VERTE sur l'assemblage 614+615.
 name: CI
 
 on:
@@ -23,3 +27,9 @@ jobs:
 
       - name: Run Jest tests
         run: npm test
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E acceptance tests (SHIAAAAAAAAAAAAAAAAAAAAAAAA-605)
+        run: npm run test:e2e
