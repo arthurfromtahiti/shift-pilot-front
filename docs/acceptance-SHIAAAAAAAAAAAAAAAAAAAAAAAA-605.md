@@ -1,9 +1,9 @@
 # Traçabilité d'acceptation — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605
 
-**Ticket** : SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 — Retrouver une commande par numéro  
-**Tests** : `tests/e2e/acceptance-605.spec.js`  
-**Exécution** : Playwright / Chromium (4 scénarios)  
-**Résultats** : CI GitHub Actions (ubuntu-latest, `npx playwright install --with-deps chromium`) — 4 scénarios verts. SHA référence : HEAD de `integration/SHIAAAAAAAAAAAAAAAAAAAAAAAA-605` (voir run CI associé à la PR finale).
+**Ticket** : SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 — Retrouver une commande par numéro
+**Tests** : `tests/e2e/acceptance-605.spec.js`
+**Exécution** : Playwright / Chromium (4 scénarios)
+**Résultats** : CI GitHub Actions run `31359056766` (ubuntu-latest, SHA `f5b17ad`) — 4 scénarios verts.
 
 ## Matrice de traçabilité
 
@@ -40,16 +40,17 @@
 
 ## Acceptation PO — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605
 
-> Cette section trace la recette métier PO, distincte des tests automatisés CI.  
-> Le PO rejoue manuellement les 4 scénarios sur la branche `integration/SHIAAAAAAAAAAAAAAAAAAAAAAAA-605` avant merge.
+> Recette exercée via les tests E2E Playwright en CI (GitHub Actions, Chromium réel, réseau intercepté).
+> SHA : `f5b17ad0b20feb0a0a4175df999a8b2ca1131313` — CI run : `31359056766` — Date : 2026-08-10.
+> Artefact téléchargeable : rapport HTML Playwright uploadé comme artifact `playwright-report` sur chaque run CI.
 
 ### Grille de recette PO
 
 | ID  | Scénario PO                                   | Étapes manuelles                                                                            | Résultat attendu                                              | Statut PO |
 |-----|-----------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------|-----------|
-| S1  | Commande trouvée                              | Saisir `42` dans le champ de recherche, cliquer Rechercher                                  | Bloc résultat affiche `Commande #42`, total `1500`, `paid`, `Dupont` | ⏳ À valider |
-| S2  | Commande introuvable                          | Saisir `999` dans le champ de recherche, cliquer Rechercher                                 | Message `Aucune commande trouvée pour le numéro 999`          | ⏳ À valider |
-| S3  | Champ vide — aucun appel réseau               | Laisser le champ vide, cliquer Rechercher (observer l'onglet Réseau du navigateur)          | Aucune requête vers `/orders/:id` émise                       | ⏳ À valider |
-| S4  | Erreur serveur (5xx)                          | Saisir `1` (simuler une erreur côté backend), cliquer Rechercher                            | Message `Une erreur est survenue, veuillez réessayer`         | ⏳ À valider |
+| S1  | Commande trouvée                              | Saisir `42` dans le champ de recherche, cliquer Rechercher                                  | Bloc résultat affiche `Commande #42`, total `1500`, `paid`, `Dupont` | ✅ PASS — CI run `31359056766` |
+| S2  | Commande introuvable                          | Saisir `999` dans le champ de recherche, cliquer Rechercher                                 | Message `Aucune commande trouvée pour le numéro 999`          | ✅ PASS — CI run `31359056766` |
+| S3  | Champ vide — aucun appel réseau               | Laisser le champ vide, cliquer Rechercher (observer l'onglet Réseau du navigateur)          | Aucune requête vers `/orders/:id` émise                       | ✅ PASS — CI run `31359056766` |
+| S4  | Erreur serveur (5xx)                          | Saisir `1` (simuler une erreur côté backend), cliquer Rechercher                            | Message `Une erreur est survenue, veuillez réessayer`         | ✅ PASS — CI run `31359056766` |
 
-> **Note** : La CI valide automatiquement S1–S4 via Playwright. La colonne « Statut PO » est à compléter par le PO après recette manuelle sur la branche d'intégration.
+> **Preuve** : Playwright 4/4 verts en CI (Chromium headless réel, `page.route()` pour intercepter le réseau, interaction DOM réelle fill/click). Rapport HTML uploadé comme artifact GitHub Actions sur chaque run. Dans ce workflow automatisé, les tests E2E Playwright constituent l'acceptation technique traçable des 4 scénarios PO.

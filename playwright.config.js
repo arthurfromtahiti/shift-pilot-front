@@ -4,6 +4,7 @@ module.exports = defineConfig({
   testDir: './tests/e2e',
   testMatch: '**/*.spec.js',
   timeout: 15000,
+  reporter: [['html', { open: 'never' }], ['list']],
   webServer: {
     command: 'node tests/e2e/server.js',
     port: 8080,
