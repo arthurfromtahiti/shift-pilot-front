@@ -1,7 +1,5 @@
-# Impact onboarding : NON
-# Tests d'acceptation SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 — plan QA en parallèle du dev.
-# Cette PR cible la branche SHIAAAAAAAAAAAAAAAAAAAAAAAA-614 (feature front) qui fournit
-# l'implémentation de searchOrderById. La CI est VERTE sur l'assemblage 614+615.
+# PR d'intégration SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 — Retrouver une commande par numéro.
+# Suite complète : Jest (unitaire) + Playwright E2E (4 scénarios d'acceptation métier).
 name: CI
 
 on:
