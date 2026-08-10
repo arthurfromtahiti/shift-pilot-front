@@ -168,6 +168,27 @@ async function exportOrders(status, sort, from, to, customerName) {
   URL.revokeObjectURL(objectUrl);
 }
 
+async function searchOrderById(id) {
+  if (!id) return;
+  const resultEl = document.getElementById("order-id-result");
+  resultEl.textContent = "Recherche en cours…";
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/${id}`);
+    if (response.ok) {
+      const order = await response.json();
+      resultEl.textContent = [order.total, order.status, order.clientName]
+        .filter((v) => v != null)
+        .join(" — ");
+    } else if (response.status === 404) {
+      resultEl.textContent = `Aucune commande trouvée pour le numéro ${id}`;
+    } else {
+      resultEl.textContent = "Erreur lors de la recherche de la commande";
+    }
+  } catch {
+    resultEl.textContent = "Erreur lors de la recherche de la commande";
+  }
+}
+
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded", () => {
     const statusSelect = document.getElementById("status-filter");
@@ -282,6 +303,25 @@ if (typeof document !== "undefined") {
       });
     }
 
+    const searchBtn = document.getElementById("order-id-search-btn");
+    const searchInput = document.getElementById("order-id-search");
+    if (searchBtn && searchInput) {
+      const runSearch = async () => {
+        const id = searchInput.value.trim();
+        if (!id) return;
+        searchBtn.disabled = true;
+        try {
+          await searchOrderById(id);
+        } finally {
+          searchBtn.disabled = false;
+        }
+      };
+      searchBtn.addEventListener("click", runSearch);
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !searchBtn.disabled) runSearch();
+      });
+    }
+
     loadOrders(undefined, undefined, undefined, undefined, undefined, currentPage);
   });
 }
@@ -289,5 +329,5 @@ if (typeof document !== "undefined") {
 // Chargé à la fois comme module natif par index.html (<script type="module">, pas de "module" global)
 // et via require() par les tests Jest (CommonJS) — d'où l'export gardé plutôt qu'un mot-clé "export".
 if (typeof module !== "undefined") {
-  module.exports = { loadOrders, loadOrderHistory, exportOrders };
+  module.exports = { loadOrders, loadOrderHistory, exportOrders, searchOrderById };
 }
