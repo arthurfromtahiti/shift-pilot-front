@@ -1,8 +1,8 @@
 # Impact onboarding : NON
 # Tests d'acceptation SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 inclus (plan QA, en parallèle du dev).
-# État attendu sur cette PR : 8 tests rouges (S1/S2/S4 + contrôle index.html) — ils passeront
-# au vert quand la PR feature SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 sera soumise et mergée.
-# La CI doit être verte sur la PR feature ; elle est légitimement rouge sur cette PR plan QA.
+# État attendu sur cette PR QA : CI ROUGE — les tests S1/S2/S3/S4 + HTML + loader + câblage
+# sont intentionnellement rouges (searchOrderById absent, éléments HTML absents).
+# Ils passeront au vert une fois la PR feature SHIAAAAAAAAAAAAAAAAAAAAAAAA-614 mergée.
 name: CI
 
 on:
