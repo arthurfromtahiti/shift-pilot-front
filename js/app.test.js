@@ -5,7 +5,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { loadOrders, loadOrderHistory, exportOrders } = require("./app.js");
+const { loadOrders, loadOrderHistory, exportOrders, searchOrderById } = require("./app.js");
 
 const paginatedResponse = (orders, page = 1, totalPages = 1) => ({
   orders,
@@ -1194,5 +1194,221 @@ describe("exportOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-487", () => {
     resolveExport();
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(btn.disabled).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Contrat d'interface attendu par les tests d'acceptation SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 :
+//   HTML requis (présent dans index.html ou injecté par DOMContentLoaded) :
+//     <input  id="order-search-input"  type="text" />
+//     <button id="order-search-btn">Rechercher</button>
+//     <div    id="order-search-result"></div>
+//   Export requis de js/app.js :
+//     module.exports = { ..., searchOrderById }
+//   Signature : async function searchOrderById(orderId)
+//     - orderId vide ("", null, undefined) → aucun appel réseau, retour immédiat
+//     - orderId non vide → GET ${API_BASE_URL}/orders/${orderId}
+//       - 200 → affiche total, status, clientName dans #order-search-result
+//       - 404 → affiche "Aucune commande trouvée pour le numéro <orderId>"
+//       - 5xx / réseau → message d'erreur générique dans #order-search-result
+//     Dans tous les cas, #orders-list reste inchangée et visible.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("searchOrderById — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 recherche par numéro de commande", () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <input id="order-search-input" type="text" placeholder="Numéro de commande" />
+      <button id="order-search-btn">Rechercher</button>
+      <div id="order-search-result"></div>
+      <ul id="orders-list">
+        <li>Commande #1 — 100 XPF (paid)</li>
+        <li>Commande #2 — 200 XPF (cancelled)</li>
+      </ul>
+    `;
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  // ── Scénario 1 : Recherche réussie ──────────────────────────────────────
+
+  test("S1 : GET /orders/N est appelé avec l'id saisi", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ id: 42, total: 1500, status: "paid", clientName: "Jean Dupont", currency: "XPF" }),
+    });
+
+    await searchOrderById(42);
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.pathname).toBe("/orders/42");
+  });
+
+  test("S1 : la fiche affiche total, status et clientName", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ id: 42, total: 1500, status: "paid", clientName: "Jean Dupont", currency: "XPF" }),
+    });
+
+    await searchOrderById(42);
+
+    const result = document.getElementById("order-search-result");
+    expect(result.textContent).toContain("1500");
+    expect(result.textContent).toContain("paid");
+    expect(result.textContent).toContain("Jean Dupont");
+  });
+
+  test("S1 cas-limite : clientName null → pas d'exception, total et status affichés", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ id: 7, total: 500, status: "cancelled", clientName: null, clientEmail: null, currency: "XPF" }),
+    });
+
+    await expect(searchOrderById(7)).resolves.not.toThrow();
+
+    const result = document.getElementById("order-search-result");
+    expect(result.textContent).toContain("500");
+    expect(result.textContent).toContain("cancelled");
+  });
+
+  test("S1 : après recherche réussie, #orders-list reste accessible et non modifiée", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ id: 42, total: 1500, status: "paid", clientName: "Jean Dupont", currency: "XPF" }),
+    });
+
+    const listBefore = document.getElementById("orders-list").innerHTML;
+    await searchOrderById(42);
+
+    const list = document.getElementById("orders-list");
+    expect(list).not.toBeNull();
+    expect(list.innerHTML).toBe(listBefore);
+  });
+
+  // ── Scénario 2 : Numéro introuvable ─────────────────────────────────────
+
+  test("S2 : 404 → message « Aucune commande trouvée pour le numéro 999 »", async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404 });
+
+    await searchOrderById(999);
+
+    const result = document.getElementById("order-search-result");
+    expect(result.textContent).toContain("Aucune commande trouvée pour le numéro 999");
+  });
+
+  test("S2 : 404 → #orders-list inchangée", async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404 });
+
+    const listBefore = document.getElementById("orders-list").innerHTML;
+    await searchOrderById(999);
+
+    expect(document.getElementById("orders-list").innerHTML).toBe(listBefore);
+  });
+
+  // ── Scénario 3 : Champ vide soumis ──────────────────────────────────────
+
+  test("S3 : orderId vide ('') → zéro appel réseau (D5)", async () => {
+    global.fetch = jest.fn();
+
+    await searchOrderById("");
+
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test("S3 : orderId vide → #orders-list inchangée", async () => {
+    global.fetch = jest.fn();
+
+    const listBefore = document.getElementById("orders-list").innerHTML;
+    await searchOrderById("");
+
+    expect(document.getElementById("orders-list").innerHTML).toBe(listBefore);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  // ── Scénario 4 : Erreur serveur ─────────────────────────────────────────
+
+  test("S4 : réponse 5xx → message d'erreur générique (pas le message 404)", async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 });
+
+    await searchOrderById(1);
+
+    const result = document.getElementById("order-search-result");
+    expect(result.textContent).not.toBe("");
+    expect(result.textContent).not.toContain("Aucune commande trouvée");
+  });
+
+  test("S4 : réponse 5xx → #orders-list reste visible avec ses entrées", async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 });
+
+    await searchOrderById(1);
+
+    const list = document.getElementById("orders-list");
+    expect(list).not.toBeNull();
+    expect(list.children.length).toBeGreaterThan(0);
+  });
+
+  test("S4 : erreur réseau (fetch reject) → message d'erreur générique", async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+
+    await searchOrderById(1);
+
+    const result = document.getElementById("order-search-result");
+    expect(result.textContent).not.toBe("");
+    expect(result.textContent).not.toContain("Aucune commande trouvée");
+  });
+});
+
+describe("UI recherche par numéro — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605", () => {
+  beforeEach(async () => {
+    document.body.innerHTML = `
+      <select id="status-filter"><option value="">Tous</option></select>
+      <input id="order-search-input" type="text" />
+      <button id="order-search-btn">Rechercher</button>
+      <div id="order-search-result"></div>
+      <ul id="orders-list"></ul>
+    `;
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ orders: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
+    });
+
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test("S3 UI : clic sur #order-search-btn avec champ vide → zéro appel vers /orders/:id", async () => {
+    global.fetch.mockClear();
+
+    document.getElementById("order-search-btn").click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const orderEndpointCalls = global.fetch.mock.calls.filter(
+      ([url]) => /\/orders\/\d+$/.test(url)
+    );
+    expect(orderEndpointCalls).toHaveLength(0);
+  });
+
+  test("S1 UI : clic sur #order-search-btn avec un id valide appelle GET /orders/42", async () => {
+    global.fetch
+      .mockClear()
+      .mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ id: 42, total: 1500, status: "paid", clientName: "Jean Dupont", currency: "XPF" }),
+      });
+
+    document.getElementById("order-search-input").value = "42";
+    document.getElementById("order-search-btn").click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    const url = new URL(global.fetch.mock.calls[0][0]);
+    expect(url.pathname).toBe("/orders/42");
   });
 });
