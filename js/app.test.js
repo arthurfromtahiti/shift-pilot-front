@@ -1214,6 +1214,15 @@ describe("exportOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-487", () => {
 //     Dans tous les cas, #orders-list reste inchangée et visible.
 // ─────────────────────────────────────────────────────────────────────────────
 
+describe("SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 — contrôles HTML dans index.html", () => {
+  test("index.html : #order-search-input, #order-search-btn et #order-search-result sont présents", () => {
+    const html = fs.readFileSync(path.resolve(__dirname, "../index.html"), "utf8");
+    expect(html).toContain('id="order-search-input"');
+    expect(html).toContain('id="order-search-btn"');
+    expect(html).toContain('id="order-search-result"');
+  });
+});
+
 describe("searchOrderById — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 recherche par numéro de commande", () => {
   beforeEach(() => {
     document.body.innerHTML = `
