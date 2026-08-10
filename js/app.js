@@ -282,17 +282,38 @@ if (typeof document !== "undefined") {
       });
     }
 
+    const searchBtn = document.getElementById("order-search-btn");
+    const searchInput = document.getElementById("order-search-input");
+    if (searchBtn && searchInput) {
+      searchBtn.addEventListener("click", () => {
+        searchOrderById(searchInput.value);
+      });
+    }
+
     loadOrders(undefined, undefined, undefined, undefined, undefined, currentPage);
   });
 }
 
-// Stub — à implémenter dans SHIAAAAAAAAAAAAAAAAAAAAAAAA-605.
-// Contrat : orderId vide → retour immédiat (aucun appel réseau) ; non-vide → GET /orders/:id.
 async function searchOrderById(orderId) {
   if (!orderId && orderId !== 0) return;
   const resultEl = document.getElementById("order-search-result");
   if (!resultEl) return;
-  // À compléter par le développeur feature (SHIAAAAAAAAAAAAAAAAAAAAAAAA-605)
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}`);
+    if (!response.ok) {
+      if (response.status === 404) {
+        resultEl.textContent = `Aucune commande trouvée pour le numéro ${orderId}`;
+      } else {
+        resultEl.textContent = "Erreur lors de la recherche de la commande";
+      }
+      return;
+    }
+    const order = await response.json();
+    const clientPart = order.clientName != null ? ` — ${order.clientName}` : "";
+    resultEl.textContent = `Commande #${order.id} — ${order.total} ${order.currency || ""} (${order.status})${clientPart}`;
+  } catch (_) {
+    resultEl.textContent = "Erreur lors de la recherche de la commande";
+  }
 }
 
 // Chargé à la fois comme module natif par index.html (<script type="module">, pas de "module" global)
