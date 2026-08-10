@@ -12,6 +12,9 @@ module.exports = defineConfig({
   },
   use: {
     baseURL: 'http://localhost:8080',
+    launchOptions: {
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+    },
   },
   projects: [
     {
