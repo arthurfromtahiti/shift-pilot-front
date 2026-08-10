@@ -283,14 +283,34 @@ if (typeof document !== "undefined") {
     }
 
     loadOrders(undefined, undefined, undefined, undefined, undefined, currentPage);
+
+    const searchBtn = document.getElementById("order-search-btn");
+    if (searchBtn) {
+      searchBtn.addEventListener("click", () => {
+        const input = document.getElementById("order-search-input");
+        searchOrderById(input ? input.value : "");
+      });
+    }
   });
 }
 
-// Stub — à implémenter dans SHIAAAAAAAAAAAAAAAAAAAAAAAA-605.
-// Contrat : orderId vide → retour immédiat (aucun appel réseau) ; non-vide → GET /orders/:id.
 async function searchOrderById(orderId) {
   if (!orderId && orderId !== 0) return;
-  // À compléter par le développeur feature (SHIAAAAAAAAAAAAAAAAAAAAAAAA-605)
+  const resultEl = document.getElementById("order-search-result");
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}`);
+    if (response.ok) {
+      const order = await response.json();
+      const clientName = order.clientName ? ` — ${order.clientName}` : "";
+      resultEl.textContent = `#${order.id} — ${order.total} ${order.currency || ""}${clientName} (${order.status})`;
+    } else if (response.status === 404) {
+      resultEl.textContent = `Aucune commande trouvée pour le numéro ${orderId}`;
+    } else {
+      resultEl.textContent = `Erreur serveur. Veuillez réessayer.`;
+    }
+  } catch {
+    resultEl.textContent = `Erreur réseau. Veuillez réessayer.`;
+  }
 }
 
 // Chargé à la fois comme module natif par index.html (<script type="module">, pas de "module" global)
