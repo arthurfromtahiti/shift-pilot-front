@@ -1212,7 +1212,7 @@ describe("exportOrders — SHIAAAAAAAAAAAAAAAAAAAAAAAA-487", () => {
 //       - 200 → affiche "Commande #id — total currency (status) — clientName" (clientName omis si null)
 //              clientEmail n'est pas affiché (seul clientName apparaît, per spec)
 //       - 404 → affiche "Aucune commande trouvée pour le numéro <id>"
-//       - 5xx / réseau → affiche "Erreur lors de la recherche de la commande"
+//       - 5xx / réseau → affiche "Une erreur est survenue, veuillez réessayer"
 //     Loader : affiche "Recherche en cours…" dans #order-id-result dès le début de l'appel
 //     Câblage : #order-id-search-btn est désactivé le temps de la requête asynchrone
 //     Dans tous les cas, #orders-list reste inchangée et visible.
@@ -1356,7 +1356,7 @@ describe("searchOrderById — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 recherche par num�
     await searchOrderById(1);
 
     const result = document.getElementById("order-id-result");
-    expect(result.textContent).toBe("Erreur lors de la recherche de la commande");
+    expect(result.textContent).toBe("Une erreur est survenue, veuillez réessayer");
   });
 
   test("S4 : réponse 5xx → #orders-list reste visible avec ses entrées", async () => {
@@ -1375,7 +1375,7 @@ describe("searchOrderById — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 recherche par num�
     await searchOrderById(1);
 
     const result = document.getElementById("order-id-result");
-    expect(result.textContent).toBe("Erreur lors de la recherche de la commande");
+    expect(result.textContent).toBe("Une erreur est survenue, veuillez réessayer");
   });
 
   // ── Loader ───────────────────────────────────────────────────────────────

@@ -43,14 +43,14 @@ async function searchOrderById(id) {
       return;
     }
     if (!response.ok) {
-      resultEl.textContent = "Erreur lors de la recherche de la commande";
+      resultEl.textContent = "Une erreur est survenue, veuillez réessayer";
       return;
     }
     const order = await response.json();
     const clientPart = order.clientName ? ` — ${order.clientName}` : "";
     resultEl.textContent = `Commande #${order.id} — ${order.total} ${order.currency} (${order.status})${clientPart}`;
   } catch (_) {
-    resultEl.textContent = "Erreur lors de la recherche de la commande";
+    resultEl.textContent = "Une erreur est survenue, veuillez réessayer";
   }
 }
 
