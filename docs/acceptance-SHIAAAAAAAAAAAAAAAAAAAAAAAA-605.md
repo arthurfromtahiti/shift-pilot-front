@@ -3,7 +3,7 @@
 **Ticket** : SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 — Retrouver une commande par numéro  
 **Tests** : `tests/e2e/acceptance-605.spec.js`  
 **Exécution** : Playwright / Chromium (4 scénarios)  
-**Résultats** : `4 passed (3.3s)` — exécution locale confirmée sur SHA `16eda5a` + CI GitHub Actions (`npx playwright install --with-deps chromium`)
+**Résultats** : CI GitHub Actions (ubuntu-latest, `npx playwright install --with-deps chromium`) — 4 scénarios verts. SHA référence : HEAD de `integration/SHIAAAAAAAAAAAAAAAAAAAAAAAA-605` (voir run CI associé à la PR finale).
 
 ## Matrice de traçabilité
 
