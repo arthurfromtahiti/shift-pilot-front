@@ -29,6 +29,31 @@ async function loadOrderHistory(orderId) {
   }
 }
 
+async function searchOrderById(id) {
+  if (!id) return;
+  const resultEl = document.getElementById("order-id-result");
+  if (!resultEl) return;
+
+  resultEl.textContent = "Recherche en cours…";
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders/${id}`);
+    if (response.status === 404) {
+      resultEl.textContent = `Aucune commande trouvée pour le numéro ${id}`;
+      return;
+    }
+    if (!response.ok) {
+      resultEl.textContent = "Erreur lors de la recherche de la commande";
+      return;
+    }
+    const order = await response.json();
+    const clientPart = order.clientName ? ` — ${order.clientName}` : "";
+    resultEl.textContent = `Commande #${order.id} — ${order.total} ${order.currency} (${order.status})${clientPart}`;
+  } catch (_) {
+    resultEl.textContent = "Erreur lors de la recherche de la commande";
+  }
+}
+
 async function loadOrders(status, sort, from, to, customerName, page = 1) {
   const url = new URL(`${API_BASE_URL}/orders`);
   if (status) url.searchParams.set("status", status);
@@ -168,31 +193,29 @@ async function exportOrders(status, sort, from, to, customerName) {
   URL.revokeObjectURL(objectUrl);
 }
 
-async function searchOrderById(id) {
-  if (!id) return;
-  const resultEl = document.getElementById("order-id-result");
-  resultEl.textContent = "Recherche en cours…";
-  try {
-    const response = await fetch(`${API_BASE_URL}/orders/${id}`);
-    if (response.ok) {
-      const order = await response.json();
-      resultEl.textContent = [order.total, order.status, order.clientName]
-        .filter((v) => v != null)
-        .join(" — ");
-    } else if (response.status === 404) {
-      resultEl.textContent = `Aucune commande trouvée pour le numéro ${id}`;
-    } else {
-      resultEl.textContent = "Erreur lors de la recherche de la commande";
-    }
-  } catch {
-    resultEl.textContent = "Erreur lors de la recherche de la commande";
-  }
-}
-
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded", () => {
     const statusSelect = document.getElementById("status-filter");
     let currentPage = 1;
+
+    const orderIdInput = document.getElementById("order-id-search");
+    const orderIdBtn = document.getElementById("order-id-search-btn");
+    if (orderIdInput && orderIdBtn) {
+      const doSearch = async () => {
+        const val = orderIdInput.value.trim();
+        if (!val) return;
+        orderIdBtn.disabled = true;
+        try {
+          await searchOrderById(val);
+        } finally {
+          orderIdBtn.disabled = false;
+        }
+      };
+      orderIdBtn.addEventListener("click", doSearch);
+      orderIdInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !orderIdBtn.disabled) doSearch();
+      });
+    }
 
     const sortLabel = document.createElement("label");
     sortLabel.htmlFor = "sort-filter";
@@ -300,25 +323,6 @@ if (typeof document !== "undefined") {
         } finally {
           exportBtn.disabled = false;
         }
-      });
-    }
-
-    const searchBtn = document.getElementById("order-id-search-btn");
-    const searchInput = document.getElementById("order-id-search");
-    if (searchBtn && searchInput) {
-      const runSearch = async () => {
-        const id = searchInput.value.trim();
-        if (!id) return;
-        searchBtn.disabled = true;
-        try {
-          await searchOrderById(id);
-        } finally {
-          searchBtn.disabled = false;
-        }
-      };
-      searchBtn.addEventListener("click", runSearch);
-      searchInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !searchBtn.disabled) runSearch();
       });
     }
 

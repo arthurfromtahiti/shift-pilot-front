@@ -1,8 +1,7 @@
 # Impact onboarding : NON
-# Tests d'acceptation SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 inclus (plan QA, en parallèle du dev).
-# État attendu sur cette PR QA : CI ROUGE — les tests S1/S2/S3/S4 + HTML + loader + câblage
-# sont intentionnellement rouges (searchOrderById absent, éléments HTML absents).
-# Ils passeront au vert une fois la PR feature SHIAAAAAAAAAAAAAAAAAAAAAAAA-614 mergée.
+# Tests d'acceptation SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 — plan QA en parallèle du dev.
+# Cette PR cible la branche SHIAAAAAAAAAAAAAAAAAAAAAAAA-614 (feature front) qui fournit
+# l'implémentation de searchOrderById. La CI est VERTE sur l'assemblage 614+615.
 name: CI
 
 on:
