@@ -3,14 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=18.14.0"
   },
   "scripts": {
-    "test": "jest",
-    "test:e2e": "playwright test"
+    "test": "jest"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1",
     "jest": "^30.0.0",
     "jest-environment-jsdom": "^30.0.0"
   },
