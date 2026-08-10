@@ -3,7 +3,7 @@
 **Ticket** : SHIAAAAAAAAAAAAAAAAAAAAAAAA-605 — Retrouver une commande par numéro
 **Tests** : `tests/e2e/acceptance-605.spec.js`
 **Exécution** : Playwright / Chromium (4 scénarios)
-**Résultats** : CI GitHub Actions run `31359871718` (ubuntu-latest, SHA `284245ae`) — 4 scénarios verts.
+**Résultats** : CI GitHub Actions run `31360866756` (ubuntu-latest, SHA `825a6a97`) — 4 scénarios verts.
 
 ## Matrice de traçabilité
 
@@ -41,7 +41,7 @@
 ## Acceptation PO — SHIAAAAAAAAAAAAAAAAAAAAAAAA-605
 
 > Recette exercée via les tests E2E Playwright en CI (GitHub Actions, Chromium réel, réseau intercepté).
-> SHA : `284245ae319b3b42f680c02927ac089b703efeb9` — CI run : `31359871718` — Date : 2026-08-10.
+> SHA : `825a6a97ea1d6ec2e3c0317ade716765612ed220` — CI run : `31360866756` — Date : 2026-08-10.
 > Artefact téléchargeable : rapport HTML Playwright uploadé comme artifact `playwright-report` sur chaque run CI.
 
 > **Chromium local** : pour exécuter les tests E2E en dehors de la CI, installer d'abord les navigateurs avec `npx playwright install --with-deps chromium`. La CI le fait automatiquement via le step *Install Playwright browsers*.
@@ -50,12 +50,12 @@
 
 | ID  | Scénario PO                                   | Étapes manuelles                                                                            | Résultat attendu                                              | Statut PO |
 |-----|-----------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------|-----------|
-| S1  | Commande trouvée                              | Saisir `42` dans le champ de recherche, cliquer Rechercher                                  | Bloc résultat affiche `Commande #42`, total `1500`, `paid`, `Dupont` | ✅ PASS — CI run `31359871718` |
-| S2  | Commande introuvable                          | Saisir `999` dans le champ de recherche, cliquer Rechercher                                 | Message `Aucune commande trouvée pour le numéro 999`          | ✅ PASS — CI run `31359871718` |
-| S3  | Champ vide — aucun appel réseau               | Laisser le champ vide, cliquer Rechercher (observer l'onglet Réseau du navigateur)          | Aucune requête vers `/orders/:id` émise                       | ✅ PASS — CI run `31359871718` |
-| S4  | Erreur serveur (5xx)                          | Saisir `1` (simuler une erreur côté backend), cliquer Rechercher                            | Message `Une erreur est survenue, veuillez réessayer`         | ✅ PASS — CI run `31359871718` |
+| S1  | Commande trouvée                              | Saisir `42` dans le champ de recherche, cliquer Rechercher                                  | Bloc résultat affiche `Commande #42`, total `1500`, `paid`, `Dupont` | ✅ PASS — CI run `31360866756` |
+| S2  | Commande introuvable                          | Saisir `999` dans le champ de recherche, cliquer Rechercher                                 | Message `Aucune commande trouvée pour le numéro 999`          | ✅ PASS — CI run `31360866756` |
+| S3  | Champ vide — aucun appel réseau               | Laisser le champ vide, cliquer Rechercher (observer l'onglet Réseau du navigateur)          | Aucune requête vers `/orders/:id` émise                       | ✅ PASS — CI run `31360866756` |
+| S4  | Erreur serveur (5xx)                          | Saisir `1` (simuler une erreur côté backend), cliquer Rechercher                            | Message `Une erreur est survenue, veuillez réessayer`         | ✅ PASS — CI run `31360866756` |
 
-> **Preuve technique** : Playwright 4/4 verts en CI (Chromium headless réel, `page.route()` pour intercepter le réseau, interaction DOM réelle fill/click). Rapport HTML uploadé comme artifact GitHub Actions sur chaque run CI `31359871718`.
+> **Preuve technique** : Playwright 4/4 verts en CI (Chromium headless réel, `page.route()` pour intercepter le réseau, interaction DOM réelle fill/click). Rapport HTML uploadé comme artifact GitHub Actions sur chaque run CI `31360866756`.
 
 ---
 
