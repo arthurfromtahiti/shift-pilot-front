@@ -44,7 +44,7 @@
 > Les verts CI sont visibles dans l'onglet *Checks* de la PR — rapport HTML uploadé comme artifact `playwright-report` sur chaque run.
 > Date de dernière vérification locale : 2026-08-10 — 4/4 PASS.
 
-> **Chromium local** : `npm run test:e2e` détecte automatiquement l'environnement (voir `scripts/run-e2e.sh`).  
+> **Chromium local** : `npm run test:e2e` détecte automatiquement l'environnement (voir `scripts/run-e2e.sh`).
 > En CI, l'étape *Install Playwright browsers* (`npx playwright install --with-deps chromium`) gère les dépendances système.
 
 ### Grille de recette PO
