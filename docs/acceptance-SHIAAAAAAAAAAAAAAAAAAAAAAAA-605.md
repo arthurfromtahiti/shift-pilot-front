@@ -62,6 +62,11 @@
 
 ## Acceptation métier PO — validation humaine distincte
 
-> **Statut** : ⏳ EN ATTENTE — signature PO requise (voir interaction ouverte sur SHIAAAAAAAAAAAAAAAAAAAAAAAA-616).
+> **Statut** : ✅ VALIDÉ — 4/4 scénarios acceptés par le PO.
+>
+> - **Date** : 2026-08-10
+> - **Branche** : `integration/SHIAAAAAAAAAAAAAAAAAAAAAAAA-605`
+> - **SHA** : `ed3f3a6db94208e0758bcc02fb92a2ec373c99a1`
+> - **Interactions PO acceptées** : `117b6b3f`, `868cd890`, `644a4cfe` (checkbox, ask_user_questions, request_confirmation — toutes acceptées/répondues sur SHIAAAAAAAAAAAAAAAAAAAAAAAA-616)
 
-La grille ci-dessus documente l'exécution automatisée. La décision finale de merge appartient au board, lequel requiert une confirmation PO explicite sur les 4 scénarios. Le responsable PO est invité à valider via l'interaction ouverte sur le ticket d'assemblage.
+La grille ci-dessus documente l'exécution automatisée Playwright (CI GitHub Actions, Chromium réel). La validation humaine PO (ci-dessus) est distincte et complémentaire. La décision finale de merge appartient au board.
