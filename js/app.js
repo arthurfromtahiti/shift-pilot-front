@@ -34,6 +34,8 @@ async function searchOrderById(id) {
   const resultEl = document.getElementById("order-id-result");
   if (!resultEl) return;
 
+  resultEl.textContent = "Recherche en cours…";
+
   try {
     const response = await fetch(`${API_BASE_URL}/orders/${id}`);
     if (response.status === 404) {
@@ -211,7 +213,7 @@ if (typeof document !== "undefined") {
       };
       orderIdBtn.addEventListener("click", doSearch);
       orderIdInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") doSearch();
+        if (e.key === "Enter" && !orderIdBtn.disabled) doSearch();
       });
     }
 
