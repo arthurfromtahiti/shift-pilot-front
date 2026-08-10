@@ -1434,4 +1434,49 @@ describe("searchOrderById — SHIAAAAAAAAAAAAAAAAAAAAAAAA-614", () => {
     const url = new URL(global.fetch.mock.calls[1][0]);
     expect(url.pathname).toBe("/orders/7");
   });
+
+  test("câblage : #order-id-search-btn est désactivé pendant la recherche et réactivé ensuite", async () => {
+    document.body.innerHTML = `
+      <select id="status-filter"><option value="">Tous</option></select>
+      <input id="order-id-search" type="number" min="1" />
+      <button id="order-id-search-btn">Rechercher</button>
+      <div id="order-id-result"></div>
+      <ul id="orders-list"></ul>
+    `;
+
+    let resolveSearch;
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ data: [], total: 0, page: 1, pageSize: 20, totalPages: 1 }),
+      })
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSearch = () =>
+            resolve({
+              ok: true,
+              status: 200,
+              json: jest.fn().mockResolvedValue({
+                id: 42,
+                total: 1500,
+                currency: "XPF",
+                status: "paid",
+                clientName: "Jean Dupont",
+              }),
+            });
+        })
+      );
+
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    document.getElementById("order-id-search").value = "42";
+    const btn = document.getElementById("order-id-search-btn");
+    btn.click();
+    expect(btn.disabled).toBe(true);
+
+    resolveSearch();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(btn.disabled).toBe(false);
+  });
 });
